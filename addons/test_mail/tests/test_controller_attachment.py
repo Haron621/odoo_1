@@ -110,6 +110,7 @@ class TestAttachmentController(MailControllerAttachmentCommon):
                     self._upload_attachment(record, kwargs)
                 )
                 self.assertEqual(attachment.company_id, expected_company)
+<<<<<<< 345baa1d29a9027634fb099463f14b2601b63086
 
     def test_attachment_render_text_headers(self):
         """Test cache control, content-type, and security headers for text rendering."""
@@ -324,3 +325,22 @@ class TestAttachmentController(MailControllerAttachmentCommon):
         self.assertEqual(res.status_code, 200)
         self.assertIn('<pre style="white-space: pre-wrap', res.text)
         self.assertLess(len(res.content), TESTING_SIZE)
+||||||| 1d227133a5d8a02153fd8a334103388b045a029b
+=======
+
+    def test_delete_non_comment_message_attachment(self):
+        msg = self.env["mail.message"].with_user(self.user_employee).create({
+            "message_type": "notification",
+            "body": 'taratata <img src="data:image/png;base64,iV/+OkI=" width="2"> <img src="data:image/png;base64,iV/+OkI=" width="2">',
+            "model": "res.partner",
+            "res_id": self.partner_admin.id,
+        })
+
+        self.assertEqual(len(msg.attachment_ids), 1)
+        attachment = msg.attachment_ids[0]
+        self.make_jsonrpc_request("/mail/attachment/delete", params={
+            "attachment_id": attachment.id,
+            "access_token": attachment._get_ownership_token()
+        })
+        self.assertFalse(msg.attachment_ids)
+>>>>>>> fbe9517f3e110e671305424c35d2a27f5f84c2c7
