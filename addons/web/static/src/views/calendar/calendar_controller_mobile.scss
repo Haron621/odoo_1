@@ -5,11 +5,6 @@
             padding: var(--OtherCalendarPanel-padding, 0 var(--o-bs-spacer-2));
             min-height: 30px;
 
-            [data-icon="filter_alt"] {
-                min-height: 1.59rem;
-                line-height: 1.59rem;
-            }
-
             > .o_filter {
                 padding: var(--o-bs-spacer-2) 0;
 
@@ -28,13 +23,9 @@
                 }
             }
         }
+    }
 
-        .o_calendar_sidepanel_container {
-            height: 100%;
-
-            > .o_calendar_sidepanel {
-                width: auto;
-            }
-        }
+    .o_bottom_sheet .o_calendar_sidepanel {
+        width: auto;
     }
 }

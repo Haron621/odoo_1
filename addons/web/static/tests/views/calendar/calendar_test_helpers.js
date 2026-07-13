@@ -684,6 +684,8 @@ export async function changeScale(scale) {
 export async function displayCalendarPanel() {
     if (isSmall()) {
         await contains(".o_calendar_container .o_other_calendar_panel").click();
+        // let the bottom sheet position itself
+        await animationFrame();
     }
 }
 

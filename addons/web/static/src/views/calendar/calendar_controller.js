@@ -4,6 +4,7 @@ import {
 } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { useBus, useOwnedDialogs, useService } from "@web/core/utils/hooks";
+import { usePopover } from "@web/core/popover/popover_hook";
 import { Layout } from "@web/search/layout";
 import { useModelWithSampleData } from "@web/model/model";
 import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
@@ -90,6 +91,11 @@ export class CalendarController extends Component {
         });
 
         this.searchBarToggler = useSearchBarToggler();
+        this.mobileSidePanel = usePopover(this.constructor.components.CalendarSidePanel, {
+            useBottomSheet: true,
+            class: "px-0",
+            onClose: () => (this.state.mobilePanelOpen = false),
+        });
 
         this._baseRendererProps = {
             createRecord: this.createRecord.bind(this),
@@ -191,8 +197,16 @@ export class CalendarController extends Component {
         return {
             model: this.model,
             sidePanelShown: this.state.mobilePanelOpen,
-            toggleSidePanel: () => {
-                this.state.mobilePanelOpen = !this.state.mobilePanelOpen;
+            toggleSidePanel: (ev) => {
+                if (this.mobileSidePanel.isOpen) {
+                    this.mobileSidePanel.close();
+                } else {
+                    this.mobileSidePanel.open(ev.currentTarget, {
+                        ...this.sidePanelProps,
+                        sidePanelExpanded: true,
+                    });
+                    this.state.mobilePanelOpen = true;
+                }
             },
         };
     }
@@ -211,16 +225,12 @@ export class CalendarController extends Component {
         browser.localStorage.setItem(this.keyExpandSidebar, this.state.sidePanelExpanded);
     }
 
-    get showCalendar() {
-        return !this.uiService.isSmall || !this.sidePanelExpanded;
-    }
-
     get hasSidePanel() {
         return this.model.showDatePicker || this.model.filterSections.length > 0;
     }
 
     get sidePanelExpanded() {
-        return this.uiService.isSmall ? this.state.mobilePanelOpen : this.state.sidePanelExpanded;
+        return this.state.sidePanelExpanded;
     }
 
     get filters() {
