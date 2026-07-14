@@ -1,11 +1,21 @@
 /** @odoo-module alias=@web/../tests/mobile/core/action_swiper_tests default=false */
 
-import { beforeEach, expect, hover, mockTouch, queryFirst, test } from "@odoo/hoot";
+import {
+    advanceTime,
+    beforeEach,
+    expect,
+    freezeTime,
+    hover,
+    mockTouch,
+    queryFirst,
+    test,
+} from "@odoo/hoot";
 import { Component, xml } from "@odoo/owl";
 import {
     contains,
     defineParams,
     mountWithCleanup,
+    patchWithCleanup,
     swipeLeft,
     swipeRight,
 } from "@web/../tests/web_test_helpers";
@@ -643,4 +653,71 @@ test("an async action is awaited before being executed", async () => {
     expect.verifySteps(["action started"]);
     prom.resolve();
     await expect.waitForSteps(["action done"]);
+});
+
+class ShortSwipeParent extends Component {
+    static components = { ActionSwiper };
+    static template = xml`
+        <div class="d-flex">
+            <ActionSwiper onRightSwipe="{
+                action: () => this.onRightSwipe(),
+                iconClass: 'oi-filled',
+                bgColor: 'bg-warning',
+            }">
+                <div class="target-component" style="width: 200px; height: 80px">Test</div>
+            </ActionSwiper>
+        </div>
+    `;
+    onRightSwipe() {
+        expect.step("onRightSwipe");
+    }
+}
+
+/**
+ * Swipes 30px to the right, which is less than a quarter of the 200px target,
+ * and lifts the finger after `duration` ms. Time is frozen so that the speed
+ * of the gesture only depends on `duration`, not on the speed of the machine.
+ *
+ * @param {number} duration
+ */
+async function shortSwipeRight(duration) {
+    freezeTime();
+    const { moveTo, drop } = await contains(".o_actionswiper").drag({
+        position: { x: 0 },
+        relative: true,
+        initialPointerMoveDistance: 0,
+        // By default, the helper holds the touch for 500ms before moving,
+        // which would make every swipe slow.
+        pointerDownDuration: 1,
+    });
+    await moveTo(".o_actionswiper", { position: { x: 30 }, relative: true });
+    await advanceTime(duration);
+    await drop();
+    await advanceTime(1000);
+}
+
+test("a quick swipe shorter than a quarter of the width is performed", async () => {
+    await mountWithCleanup(ShortSwipeParent);
+    await shortSwipeRight(20);
+    expect.verifySteps(["onRightSwipe"]);
+});
+
+test("a slow swipe shorter than a quarter of the width is cancelled", async () => {
+    await mountWithCleanup(ShortSwipeParent);
+    await shortSwipeRight(1000);
+    expect.verifySteps([]);
+    expect(queryFirst(".o_actionswiper_target_container").style.transform).not.toInclude(
+        "translateX"
+    );
+});
+
+test("a swipe that starts too late is left to the browser", async () => {
+    await mountWithCleanup(ShortSwipeParent);
+    await swipeRight(".o_actionswiper");
+    expect.verifySteps(["onRightSwipe"]);
+
+    // Any horizontal move is now considered as starting too late.
+    patchWithCleanup(ActionSwiper, { swipeStartMaxDelay: -1 });
+    await swipeRight(".o_actionswiper");
+    expect.verifySteps([]);
 });
