@@ -87,6 +87,8 @@ export class Store extends BaseStore {
     // messaging menu
     menu = { counter: 0 };
     chatHub = this.computed(() => this.ChatHub.insert({}));
+    /** @type {import("models").FollowerListView} */
+    FollowerListView;
     failures = fields.Many("Failure");
     sortedFailures = this.computed(
         () =>
