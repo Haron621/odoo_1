@@ -4284,7 +4284,14 @@ class TestMrpOrder(TestMrpCommon):
         will be set too. As if the finish date is not set the planned workorder will not
         be shown in planning gantt view
         """
+<<<<<<< 4e445c1456935d1a303a56c4c3c320fe715e2804
         self.env.company.tz = 'Europe/Brussels'
+||||||| 2cc17f730296a44ca29980bde7c2fd76e3dae508
+        self.env.company.resource_calendar_id.tz = 'Europe/Brussels'
+=======
+        self.env.company.resource_calendar_id.tz = 'Europe/Brussels'
+        (self.workcenter_1 + self.workcenter_2).resource_id.tz = 'Europe/Brussels'
+>>>>>>> cfea71ef216be81113387cee69506ad7f7aa9828
         mo = self.env['mrp.production'].create({
             'product_id': self.product.id,
             'uom_id': self.bom_1.uom_id.id,
