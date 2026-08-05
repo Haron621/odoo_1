@@ -168,11 +168,17 @@ describe("pos.order - loyalty", () => {
         const order = store.addNewOrder();
 
         await addProductLineToOrder(store, order, {
+            templateId: 5,
+            productId: 5,
             qty: 2,
+            tax_ids: [],
         });
 
         await addProductLineToOrder(store, order, {
+            templateId: 5,
+            productId: 5,
             price_unit: 5,
+            tax_ids: [],
         });
 
         // Get loyalty reward #1 - type = "discount"
@@ -182,6 +188,7 @@ describe("pos.order - loyalty", () => {
         expect(result.discountable).toBe(25);
     });
 
+<<<<<<< 714333254516ec2def5b8d692499c0f46b49d5cf
     test("_getDiscountableOnCheapest excludes fixed tax for non-ewallet program", async () => {
         const store = await setupPosEnv();
         const models = store.models;
@@ -241,6 +248,35 @@ describe("pos.order - loyalty", () => {
         expect(taxIds).not.toInclude(fixedTax.id);
     });
 
+||||||| 56e4a6c8f1473d032a742d51ab5f5052daa7f227
+=======
+    test("discount does not apply on tips", async () => {
+        const store = await setupPosEnv();
+        const models = store.models;
+        const order = store.addNewOrder();
+
+        await addProductLineToOrder(store, order, {
+            templateId: 5,
+            productId: 5,
+            price_unit: 100,
+        });
+
+        await addProductLineToOrder(store, order, {
+            templateId: 1,
+            productId: 1,
+            price_unit: 10,
+        });
+
+        // Tip not discountable
+        const discountReward = models["loyalty.reward"].get(1);
+        expect(order._getDiscountableOnOrder(discountReward).discountable).toBe(115);
+
+        // Tip payable with ewallet/giftcards
+        const paymentReward = models["loyalty.reward"].get(2);
+        expect(order._getDiscountableOnOrder(paymentReward).discountable).toBe(125);
+    });
+
+>>>>>>> d2e6c8a7e36f556ad979ea3bc0feb14b964a00c5
     test("_computeNItems", async () => {
         const store = await setupPosEnv();
         const models = store.models;
@@ -450,7 +486,7 @@ describe("pos.order - loyalty", () => {
         deactivateAllProgramsExcept(store, [8]);
 
         // 2 units grant 2 points, the reward costs 1
-        await addProductLineToOrder(store, order, { qty: 2 });
+        await addProductLineToOrder(store, order, { templateId: 5, productId: 5, qty: 2 });
         await store.updateRewards();
         await tick();
         expect(order._get_reward_lines()).toHaveLength(1);
@@ -519,8 +555,13 @@ describe("pos.order - loyalty", () => {
         const models = store.models;
         const order = store.addNewOrder();
 
-        const product = models["product.product"].get(1);
-        await addProductLineToOrder(store, order, { productId: product.id, price_unit: 50 });
+        const product = models["product.product"].get(5);
+        await addProductLineToOrder(store, order, {
+            templateId: 5,
+            productId: product.id,
+            price_unit: 50,
+            tax_ids: [],
+        });
 
         const reward = models["loyalty.reward"].get(4);
         const discountProduct = models["product.product"].get(200);
@@ -675,7 +716,7 @@ describe("pos.order - rebuilt client state", () => {
         reward.discount_line_product_id = models["product.product"].get(5);
         order.setPartner(partner);
         await store.orderUpdateLoyaltyPrograms();
-        await addProductLineToOrder(store, order, { productId: 1, price_unit: 10 });
+        await addProductLineToOrder(store, order, { templateId: 5, productId: 5, price_unit: 10 });
         expect(order._applyReward(reward, card.id)).toBe(true);
         expect(order._get_reward_lines()).toHaveLength(1);
 
