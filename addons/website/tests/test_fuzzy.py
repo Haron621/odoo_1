@@ -2,6 +2,7 @@
 
 import logging
 import re
+from unittest.mock import patch
 
 from lxml import etree
 from markupsafe import Markup
@@ -10,6 +11,7 @@ import odoo.tests
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.website.controllers.main import Website
+from odoo.addons.website.models.website import Website as WebsiteModel
 from odoo.addons.http_routing.tests.common import MockRequest
 from odoo.addons.website.tools import distance
 
@@ -215,8 +217,16 @@ class TestAutoComplete(TransactionCase):
 
     def test_01_few_results(self):
         """ Tests an autocomplete with exact match and less than the maximum number of results """
+<<<<<<< 12ba2b8866d93398eb9853e12eb44bb37a48d785
         suggestions = self._autocomplete("few")
         results = suggestions['results'].get("website_page", {}).get('data', [])
+||||||| a78f5f25b07cf623b6a0fe7faf0c49c35d9166fc
+        suggestions = self._autocomplete("few")
+=======
+        with patch.object(WebsiteModel, '_search_find_fuzzy_term') as find_fuzzy:
+            suggestions = self._autocomplete("few")
+        find_fuzzy.assert_not_called()
+>>>>>>> 154d82a9834cdf627906da8361fe6aba06fc943c
         self.assertEqual(2, suggestions['results_count'], "Text data contains two pages with 'few'")
         self.assertEqual(2, len(results), "All results must be present")
         self.assertFalse(suggestions['fuzzy_search'], "Expects an exact match")
