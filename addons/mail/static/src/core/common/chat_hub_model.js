@@ -39,8 +39,8 @@ export class ChatHub extends Record {
             () => this.onRecompute()
         );
         this.onChange(
-            () => [],
-            () => {
+            () => [], // one-shot init (no dependencies), clean up on delete
+            function initChatHub() {
                 const stopStorage = subscribeToStorage(CHAT_HUB_KEY, (ev) => {
                     if (ev.key === CHAT_HUB_KEY) {
                         this.load(ev.newValue);

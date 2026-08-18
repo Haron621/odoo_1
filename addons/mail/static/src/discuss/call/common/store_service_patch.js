@@ -12,6 +12,10 @@ import { patch } from "@web/core/utils/patch";
  */
 let callShareUrl;
 
+function routerOwnsAddressBar() {
+    return Array.isArray(router.current.actionStack);
+}
+
 // The web client's router owns the address bar and recomputes it from the action state on every
 // (debounced) push, so directly writing the meeting link with `history.replaceState` is
 // immediately overwritten. Instead, teach the router to emit the link itself: its own pushes then
@@ -32,11 +36,7 @@ patch(router, {
 const StorePatch = {
     setup() {
         super.setup(...arguments);
-        this.rtc = fields.One("Rtc", {
-            compute() {
-                return {};
-            },
-        });
+        this.rtc = this.computed(() => this.Rtc.insert({}));
         this.ringingChannels = fields.Many("discuss.channel");
         this.onChange(
             () => [this.ringingChannels.length > 0],
@@ -60,7 +60,7 @@ const StorePatch = {
                 if (!this.discuss?.hasRestoredThread) {
                     return;
                 }
-                this._hasFullscreenUrlOnUpdate();
+                this._hasFullscreenUrlOnUpdate(this._hasFullscreenUrl);
             },
             { immediate: true }
         );
@@ -94,11 +94,14 @@ const StorePatch = {
             ? this.rtc.localChannel?.invitationLink
             : undefined;
     },
-    _hasFullscreenUrlOnUpdate() {
-        if (callShareUrl) {
+    /** @param {boolean} hasFullscreenUrl */
+    _hasFullscreenUrlOnUpdate(hasFullscreenUrl) {
+        // the public page writes the address bar itself, so the router push is
+        // for the web client only
+        if (callShareUrl || !routerOwnsAddressBar()) {
             return;
         }
-        router.pushState({ fullscreen: this._hasFullscreenUrl ? true : undefined });
+        router.pushState({ fullscreen: hasFullscreenUrl ? true : undefined });
     },
     initialize() {
         super.initialize(...arguments);

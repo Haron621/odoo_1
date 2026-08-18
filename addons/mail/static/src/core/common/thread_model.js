@@ -57,11 +57,6 @@ export class Thread extends Record {
             }
         );
         this.onChange(
-            () => [this.composerDisabled],
-            () => this.composerDisabledonUpdate(),
-            { immediate: true, initialRun: false }
-        );
-        this.onChange(
             () => [this.close_chat_window],
             function onChangeCloseChatWindow(close_chat_window) {
                 if (close_chat_window) {
@@ -88,13 +83,18 @@ export class Thread extends Record {
                 } else {
                     const { promise, resolve } = Promise.withResolvers();
                     this.isLoadedPromise = promise;
-                    // chain the current resolve before overwriting it
                     this.isLoadedPromise.then(this._resolveIsLoaded);
                     this._resolveIsLoaded = resolve;
                 }
             },
-            { immediate: true }
+            { immediate: true, initialRun: false }
         );
+        this.assignComputed("newestMessage", function computeNewestMessage() {
+            return this.messages.at(-1);
+        });
+        this.assignComputed("composer", function computeComposer() {
+            return this.store.Composer.insert({ thread: this });
+        });
     }
 
     /**
@@ -124,7 +124,7 @@ export class Thread extends Record {
                 request_list: fieldNames,
             });
             thread = this.get(data);
-            if (!thread?.exists()) {
+            if (!thread) {
                 return;
             }
         }
@@ -165,10 +165,7 @@ export class Thread extends Record {
     can_react = true;
     /** @type {boolean|undefined} */
     close_chat_window;
-    composer = fields.One("Composer", {
-        compute: () => ({}),
-        inverse: "thread",
-    });
+    composer = fields.One("Composer", { inverse: "thread" });
     counter = 0;
     counter_bus_id = 0;
     /** @type {string} */
@@ -385,12 +382,7 @@ export class Thread extends Record {
         return this.message_needaction_counter;
     }
 
-    newestMessage = fields.One("mail.message", {
-        inverse: "threadAsNewest",
-        compute() {
-            return this.messages.at(-1);
-        },
-    });
+    newestMessage = fields.One("mail.message", { inverse: "threadAsNewest" });
 
     get newestPersistentMessage() {
         return this.messages.findLast((msg) => msg.persistent);
@@ -416,8 +408,6 @@ export class Thread extends Record {
     }
 
     computeComposerDisabled() {}
-
-    composerDisabledonUpdate() {}
 
     get isEmpty() {
         return this.messages.length === 0;
@@ -459,7 +449,8 @@ export class Thread extends Record {
             const { messages } = await this.fetchMessagesData({ fetchParams, routeParams });
             this.hasLoadingFailedError = undefined;
             this.hasLoadingFailed = false;
-            return messages.reverse();
+            // messages is a record list: reverse a copy, not the relation
+            return messages.slice().reverse();
         } catch (e) {
             this.hasLoadingFailed = true;
             this.hasLoadingFailedError = e;
@@ -554,6 +545,7 @@ export class Thread extends Record {
         this.pendingNewMessages = [];
     }
 
+    /** @type {import("models").Store["selvesBySequence"]} */
     selvesBySequence = this.computed(
         () => this.computeSelvesBySequence().sort((a, b) => a.sequence - b.sequence),
         { equals: shallowEqual }

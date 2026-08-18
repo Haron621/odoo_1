@@ -10,15 +10,13 @@ export const MENU_TABS = { BOOKMARK: "bookmark", NOTIFICATION: "notification" };
 export class MessagingMenu extends Record {
     static singleton = true;
 
-    allTabs = this.computed(() => [...this.store.MessagingMenuTab.records.values()], {
-        equals: shallowEqual,
-    });
-    bookmarkTab = fields.One("MessagingMenuTab", {
-        compute() {
+    setup() {
+        super.setup(...arguments);
+        this.assignComputed("bookmarkTab", function computeBookmarkTab() {
             if (this.store.self_user?.share !== false) {
                 return;
             }
-            return {
+            return this.store.MessagingMenuTab.insert({
                 id: MENU_TABS.BOOKMARK,
                 important: false,
                 recordType: "mail.message",
@@ -37,32 +35,13 @@ export class MessagingMenu extends Record {
                         preventDropdownClose: true,
                     },
                 ],
-            };
-        },
-        eager: true,
-    });
-    globalCounter = this.computed(() => this._computeGlobalCounter());
-    initializeCountersFetcher = this.computed(() =>
-        this.store.makeCachedFetchData("/mail/messaging_menu/initialize_counters", () => {
-            const filter_id_by_tab_id_by_record_type = {};
-            for (const tab of this.allTabs) {
-                if (tab.hidden) {
-                    continue;
-                }
-                filter_id_by_tab_id_by_record_type[tab.recordType] ??= {};
-                filter_id_by_tab_id_by_record_type[tab.recordType][tab.id] =
-                    tab.defaultFilter?.id ?? null;
-            }
-            return { filter_id_by_tab_id_by_record_type };
-        })
-    );
-
-    notificationTab = fields.One("MessagingMenuTab", {
-        compute() {
+            });
+        });
+        this.assignComputed("notificationTab", function computeNotificationTab() {
             if (this.store.self_user?.notification_type !== "inbox") {
                 return;
             }
-            return {
+            return this.store.MessagingMenuTab.insert({
                 id: MENU_TABS.NOTIFICATION,
                 recordType: "mail.message",
                 includesMessage: (msg) =>
@@ -93,10 +72,30 @@ export class MessagingMenu extends Record {
                         preventDropdownClose: true,
                     },
                 ],
-            };
-        },
-        eager: true,
+            });
+        });
+    }
+
+    allTabs = this.computed(() => [...this.store.MessagingMenuTab.records.values()], {
+        equals: shallowEqual,
     });
+    bookmarkTab = fields.One("MessagingMenuTab");
+    globalCounter = this.computed(() => this._computeGlobalCounter());
+    initializeCountersFetcher = this.computed(() =>
+        this.store.makeCachedFetchData("/mail/messaging_menu/initialize_counters", () => {
+            const filter_id_by_tab_id_by_record_type = {};
+            for (const tab of this.allTabs) {
+                if (tab.hidden) {
+                    continue;
+                }
+                filter_id_by_tab_id_by_record_type[tab.recordType] ??= {};
+                filter_id_by_tab_id_by_record_type[tab.recordType][tab.id] =
+                    tab.defaultFilter?.id ?? null;
+            }
+            return { filter_id_by_tab_id_by_record_type };
+        })
+    );
+    notificationTab = fields.One("MessagingMenuTab");
     sortedVisibleTabs = this.computed(
         () =>
             [...this.visibleTabs].sort(
