@@ -1,5 +1,4 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-
 from datetime import timedelta
 
 from freezegun import freeze_time
@@ -1319,6 +1318,7 @@ class TestPurchase(AccountTestInvoicingCommon):
         self.assertEqual(po.order_line[0].name, "[Code 1] Name 1\nSome Variant: Some Value: Some Text")
         self.assertEqual(po.order_line[1].name, "[Code 1] Name 1")
         self.assertEqual(po.order_line[2].name, custom_desc)
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
 
     def test_supplier_info_uom_on_variant(self):
         """Test that supplier info defined on a variant with a specific UoM is correctly applied on the purchase order line.
@@ -1441,3 +1441,21 @@ class TestPurchase(AccountTestInvoicingCommon):
         )
 
         self.assertEqual(order.order_line.price_unit, 10.0)
+||||||| 36bd3d394e680827486d1cf1e594d7a7f832f4ba
+=======
+
+    def test_prevent_partner_deletion(self):
+        """Check that alt PO correctly copies the original PO values"""
+        subcontractor, client = self.env["res.partner"].create([
+            {"name": "subcontractor"},
+            {"name": "client"},
+        ])
+
+        po = self.env["purchase.order"].create([{
+            "partner_id": subcontractor.id,
+            "dest_address_id": client.id,
+        }])
+        po.button_confirm()
+        with self.assertRaises(UserError):
+            client.unlink()
+>>>>>>> 6217535ec19f00aac46bd12041da51ea45c8fc5d

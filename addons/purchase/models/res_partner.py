@@ -1,6 +1,13 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models, _
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
+||||||| 36bd3d394e680827486d1cf1e594d7a7f832f4ba
+from odoo.addons.base.models.res_partner import WARNING_MESSAGE, WARNING_HELP
+=======
+from odoo.addons.base.models.res_partner import WARNING_MESSAGE, WARNING_HELP
+from odoo.exceptions import UserError
+>>>>>>> 6217535ec19f00aac46bd12041da51ea45c8fc5d
 
 
 class ResPartner(models.Model):
@@ -43,6 +50,7 @@ class ResPartner(models.Model):
     reminder_date_before_receipt = fields.Integer('Days Before Receipt', company_dependent=True,
         help="Number of days to send reminder email before the promised receipt date")
     buyer_id = fields.Many2one('res.users', string='Buyer')
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
 
     def _compute_application_statistics_hook(self):
         data_list = super()._compute_application_statistics_hook()
@@ -52,3 +60,17 @@ class ResPartner(models.Model):
             stat_info = {'iconClass': 'fa-credit-card', 'value': partner.purchase_order_count, 'label': _('Purchases'), 'tagClass': 'o_tag_color_5'}
             data_list[partner.id].append(stat_info)
         return data_list
+||||||| 36bd3d394e680827486d1cf1e594d7a7f832f4ba
+=======
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_if_partner_in_account_move(self):
+        """ Prevent the deletion of a partner if it is used in a PO dropship address"""
+
+        po = self.sudo().env['purchase.order'].search_count([
+            ('dest_address_id', 'in', self.ids),
+            ('state', '!=', 'draft'),
+        ])
+        if po:
+            raise UserError(_("The partner cannot be deleted because it is used as a dropship address"))
+>>>>>>> 6217535ec19f00aac46bd12041da51ea45c8fc5d
