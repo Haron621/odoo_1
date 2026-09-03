@@ -5,6 +5,7 @@ import { useCustomDropzone } from "@web/core/dropzone/dropzone_hook";
 import { useService } from "@web/core/utils/hooks";
 import { useX2ManyCrud } from "@web/views/fields/relational_utils";
 import { MailAttachmentDropzone } from "@mail/core/common/mail_attachment_dropzone";
+import { useMailComposerAttachmentsUploader } from "@mail/core/web/mail_composer_attachment_hook";
 
 export class MailComposerFormController extends formView.Controller {
     static props = {
@@ -67,8 +68,10 @@ export class MailComposerFormRenderer extends formView.Renderer {
         this.attachmentUploadService = useService("mail.attachment_upload");
         this.operations = useX2ManyCrud(() => this.props.record.data["attachment_ids"], true);
 
+        const doUpload = useMailComposerAttachmentsUploader();
         useCustomDropzone(this.root, MailAttachmentDropzone, {
             /** @param {Event} event */
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
             onDrop: async (event) => {
                 for (const thread of getActiveMailThreads()) {
                     // Use an isolated composer object instead of thread.composer to
@@ -167,6 +170,32 @@ export class MailComposerFormRenderer extends formView.Renderer {
                         });
                     }
                 }
+||||||| 7f553b660de7abde985f2382f8f839a995288a5e
+            onDrop: async event => {
+                const resIds = JSON.parse(this.props.record.data.res_ids);
+                const thread = await this.mailStore.Thread.insert({
+                    model: this.props.record.data.model,
+                    id: resIds[0],
+                });
+                for (const file of event.dataTransfer.files) {
+                    const attachment = await this.attachmentUploadService.upload(thread, thread.composer, file);
+                    await this.operations.saveRecord([attachment.id]);
+                }
+=======
+            onDrop: async event => {
+                const resIds = JSON.parse(this.props.record.data.res_ids);
+                const uploadFile = async () => {
+                    const thread = await this.mailStore.Thread.insert({
+                        model: this.props.record.data.model,
+                        id: resIds[0],
+                    });
+                    for (const file of event.dataTransfer.files) {
+                        const attachment = await this.attachmentUploadService.upload(thread, thread.composer, file);
+                        await this.operations.saveRecord([attachment.id]);
+                    }
+                };
+                await doUpload(uploadFile());
+>>>>>>> 582e5486087c1754c412400385880a98b8e4102d
             }
         });
     }

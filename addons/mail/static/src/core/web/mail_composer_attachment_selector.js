@@ -7,6 +7,8 @@ import { useX2ManyCrud } from "@web/views/fields/relational_utils";
 import { Component } from "@odoo/owl";
 import { FileUploader } from "@web/views/fields/file_handler";
 
+import { useMailComposerAttachmentsUploader } from "./mail_composer_attachment_hook";
+
 export class MailComposerAttachmentSelector extends Component {
     static template = "mail.MailComposerAttachmentSelector";
     static components = { FileUploader };
@@ -18,6 +20,7 @@ export class MailComposerAttachmentSelector extends Component {
         this.operations = useX2ManyCrud(() => {
             return this.props.record.data["attachment_ids"];
         }, true);
+        this.doUpload = useMailComposerAttachmentsUploader();
     }
 
     /** @param {Object} data */
@@ -31,6 +34,7 @@ export class MailComposerAttachmentSelector extends Component {
                 ? JSON.parse(this.props.record.data.res_ids)
                 : this.props.record.context.active_ids;
         }
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
         const thread = await this.mailStore.Thread.insert({
             model: this.props.record.data.model,
             id: resIds[0],
@@ -48,6 +52,41 @@ export class MailComposerAttachmentSelector extends Component {
         if (attachment) {
             await this.operations.saveRecord([attachment.id]);
         }
+||||||| 7f553b660de7abde985f2382f8f839a995288a5e
+        const thread = await this.mailStore.Thread.insert({
+            model: this.props.record.data.model,
+            id: resIds[0],
+        });
+        const file = new File([dataUrlToBlob(data, type)], name, { type });
+        const isThreadComposer = this.props.record.context.is_thread_composer;
+        const attachment = await this.attachmentUploadService.upload(
+            thread,
+            isThreadComposer ? thread.composer : undefined,
+            file,
+        );
+        if (attachment) {
+            await this.operations.saveRecord([attachment.id]);
+        }
+=======
+
+        const uploadFile = async () => {
+            const thread = await this.mailStore.Thread.insert({
+                model: this.props.record.data.model,
+                id: resIds[0],
+            });
+            const file = new File([dataUrlToBlob(data, type)], name, { type });
+            const isThreadComposer = this.props.record.context.is_thread_composer;
+            const attachment = await this.attachmentUploadService.upload(
+                thread,
+                isThreadComposer ? thread.composer : undefined,
+                file
+            );
+            if (attachment) {
+                await this.operations.saveRecord([attachment.id]);
+            }
+        };
+        await this.doUpload(uploadFile());
+>>>>>>> 582e5486087c1754c412400385880a98b8e4102d
     }
 }
 

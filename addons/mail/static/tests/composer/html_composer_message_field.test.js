@@ -2,6 +2,7 @@ import { getContent, setSelection } from "@html_editor/../tests/_helpers/selecti
 import { insertText } from "@html_editor/../tests/_helpers/user_actions";
 import { FileSelector } from "@html_editor/main/media/media_dialog/file_selector";
 import { uploadService } from "@html_editor/main/media/media_dialog/upload_progress_toast/upload_service";
+import { MailComposerAttachmentSelector } from "@mail/core/web/mail_composer_attachment_selector";
 import { HtmlComposerMessageField } from "@mail/views/web/fields/html_composer_message_field/html_composer_message_field";
 import { beforeEach, describe, expect, test } from "@odoo/hoot";
 import {
@@ -10,6 +11,7 @@ import {
     queryAll,
     queryAllTexts,
     queryOne,
+    setInputFiles,
     waitFor,
     waitForNone,
 } from "@odoo/hoot-dom";
@@ -24,6 +26,7 @@ import {
     patchWithCleanup,
     serverState,
 } from "@web/../tests/web_test_helpers";
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
 import {
     click,
     defineMailModels,
@@ -34,6 +37,11 @@ import {
     start,
     startServer,
 } from "../mail_test_helpers";
+||||||| 7f553b660de7abde985f2382f8f839a995288a5e
+import { defineMailModels, mailModels, openFormView, start } from "../mail_test_helpers";
+=======
+import { click, defineMailModels, mailModels, onRpcBefore, openFormView, start, startServer } from "../mail_test_helpers";
+>>>>>>> 582e5486087c1754c412400385880a98b8e4102d
 
 // Need this hack to use the arch in mountView(...)
 mailModels.MailComposeMessage._views = {};
@@ -298,4 +306,59 @@ describe("Remove attachments", () => {
         await waitForNone("[name='attachment_ids'] a:contains('test.jpg')");
         await waitForNone(".odoo-editor-editable img[data-attachment-id='1']");
     });
+});
+
+test("prevent sending message when attachments are uploading", async function () {
+    const uploadRelease = new Deferred();
+    const uploadFinished = new Deferred();
+    const mailSent = new Deferred();
+    patchWithCleanup(MailComposerAttachmentSelector.prototype, {
+        async onFileUploaded() {
+            await super.onFileUploaded(...arguments);
+            uploadFinished.resolve();
+        },
+    });
+    onRpcBefore("/mail/attachment/upload", async () => await uploadRelease);
+    onRpc("action_send_mail", () => {
+        expect.step("action_send_mail");
+        mailSent.resolve();
+        return { type: "ir.actions.act_window_close" };
+    });
+
+    const pyEnv = await startServer();
+    const resId = pyEnv["mail.compose.message"].create({
+        display_name: "Some Composer",
+        body: "Hello World!",
+        attachment_ids: [],
+    });
+    const arch = `
+        <form>
+            <field name="body" type="html"/>
+            <widget name="mail_composer_send_dropdown"/>
+            <field name="attachment_ids" widget="mail_composer_attachment_selector"/>
+        </form>
+    `;
+    await start();
+    await openFormView("mail.compose.message", resId, { 
+        arch,
+        context: {
+            active_ids: [serverState.partnerId,],
+        }
+    });
+
+    const file = new File(["test"], "fake_file.txt", { type: "text/plain" });
+    await click(".o_field_mail_composer_attachment_selector button");
+    await setInputFiles([file]);
+    await animationFrame();
+
+    await waitFor(".o_mail_send:disabled");
+    expect.verifySteps([]);
+
+    uploadRelease.resolve();
+    await uploadFinished;
+    expect.verifySteps([]);
+
+    await click(".o_mail_send:enabled");
+    await mailSent;
+    expect.verifySteps(["action_send_mail"]);
 });
