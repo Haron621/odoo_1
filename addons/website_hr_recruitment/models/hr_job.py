@@ -30,6 +30,9 @@ class HrJob(models.Model):
             <h6>4 Days after Interview</h6>
         """)
 
+    def _get_no_adress_field_value(self):
+        return _("Remote")
+
     description = fields.Html(
         'Job Description', translate=html_translate,
         prefetch=False,
