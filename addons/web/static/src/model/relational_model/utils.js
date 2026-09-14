@@ -13,6 +13,7 @@ import { evaluateExpr } from "@web/core/py_js/py";
 import { user } from "@web/core/user";
 import { unique } from "@web/core/utils/arrays";
 import { omit } from "@web/core/utils/objects";
+import { getCurrencyAggregateSpecs, isUnusedConvertedSum } from "@web/model/currency_aggregates";
 import { orderByToString } from "@web/search/utils/order_by";
 
 const granularityToInterval = {
@@ -547,11 +548,7 @@ export function getAggregateSpecifications(fields) {
     const currencyFields = unique(
         Object.values(fields)
             .filter((field) => field.aggregator && field.currency_field)
-            .map((field) => [
-                `${field.currency_field}:array_agg_distinct`,
-                `${field.name}:sum_currency`,
-            ])
-            .flat()
+            .flatMap(getCurrencyAggregateSpecs)
     );
     return aggregatableFields.concat(currencyFields);
 }
@@ -595,12 +592,8 @@ function getAggregatesFromGroupData(groupData, fields) {
     for (const keyAggregate of getAggregateSpecifications(fields)) {
         if (keyAggregate in groupData) {
             const [fieldName, aggregate] = keyAggregate.split(":");
-            if (aggregate === "sum_currency") {
-                const currencies =
-                    groupData[fields[fieldName].currency_field + ":array_agg_distinct"];
-                if (currencies.length === 1) {
-                    continue;
-                }
+            if (isUnusedConvertedSum(groupData, fields[fieldName], aggregate)) {
+                continue;
             }
             aggregates[fieldName] = groupData[keyAggregate];
         }
