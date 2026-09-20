@@ -152,6 +152,40 @@ class SaleOrderLine(models.Model):
         for line in self:
             line.is_donation = bool(line.product_id and line.product_id._is_donation())
 
+    product_template_id = fields.Many2one(
+        domain=lambda self: self._domain_product_template_id(),
+    )
+
+    def _domain_product_id(self):
+        donation_variant = (
+            self.env.ref("website_sale.product_donation")
+            .with_context(active_test=False)
+            .product_variant_id
+        )
+        return [
+            ("sale_ok", "=", True),
+            "|",
+            ("active", "=", True),
+            ("id", "=", donation_variant.id),
+        ]
+
+    def _domain_product_template_id(self):
+        donation_template = self.env.ref("website_sale.product_donation")
+        return [
+            ("sale_ok", "=", True),
+            "|",
+            ("active", "=", True),
+            ("id", "=", donation_template.id),
+        ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        for product in lines.sudo().product_id:
+            if product._is_donation():
+                product.product_tmpl_id._reactivate_if_archived()
+        return lines
+
     def _compute_price_unit(self):
         """Override of `sale` to prevent recomputing the price of donation lines.
 
