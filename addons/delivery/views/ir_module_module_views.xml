@@ -43,4 +43,17 @@
         </field>
     </record>
 
+    <record id="action_delivery_provider_modules" model="ir.actions.server">
+        <field name="name">Delivery Providers</field>
+        <field name="model_id" ref="model_delivery_carrier"/>
+        <field name="state">code</field>
+        <field name="code">action = model.install_more_provider()</field>
+    </record>
+
+    <menuitem id="sale_menu_action_delivery_carrier_form"
+        name="Deliveries"
+        action="action_delivery_provider_modules"
+        parent="sale.menu_sale_config"
+        sequence="25"/>
+
 </odoo>
