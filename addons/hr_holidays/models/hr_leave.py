@@ -988,9 +988,11 @@ Versions:
                     else:
                         employees = self.mapped('employee_id')
                     self._check_double_validation_rules(employees, values['state'])
+            employee = self.env['hr.employee'].browse(employee_id) or self.employee_id
             if 'date_from' in values:
-                values['request_date_from'] = values['date_from']
+                values['request_date_from'] = datetime.date(values['date_from'].astimezone(pytz.timezone(employee.tz)))
             if 'date_to' in values:
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca
                 values['request_date_to'] = values['date_to']
         result = super().write(values)
 
@@ -1000,6 +1002,13 @@ Versions:
         if validated_leaves and dates_amended and not state_invalidated:
             validated_leaves._amend_resource_leave_dates()
 
+||||||| 29ddf520082104fdd2b63962ba63a88c0f23b8a7
+                values['request_date_to'] = values['date_to']
+        result = super(HolidaysRequest, self).write(values)
+=======
+                values['request_date_to'] = datetime.date(values['date_to'].astimezone(pytz.timezone(employee.tz)))
+        result = super(HolidaysRequest, self).write(values)
+>>>>>>> ca413b842c48a60b2b349ff684d9aea7024463ee
         if any(field in values for field in ['request_date_from', 'date_from', 'request_date_from', 'date_to', 'holiday_status_id', 'employee_id', 'state']):
             if not values.get('state') or values.get('state') not in ('refuse', 'cancel'):
                 self._check_validity()
