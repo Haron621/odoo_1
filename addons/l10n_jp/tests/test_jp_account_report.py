@@ -41,6 +41,32 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertIn('Amount (円)', text)
         self.assertIn('対象額', text)
 
+    def test_currency_code_can_be_left_out_of_the_headers(self):
+        self.company_data['company'].l10n_jp_display_currency_code = False
+        invoice = self._create_invoice_one_line(
+            move_type='out_invoice',
+            partner_id=self.partner_a,
+            currency_id=self.env.ref('base.JPY'),
+            product_id=self.product_a,
+            tax_ids=self.tax_sale_a,
+            post=True,
+        )
+        html = self.env['ir.actions.report'].sudo()._render_qweb_html('account.report_invoice_with_payments', invoice.ids)[0]
+        text = html2plaintext(html)
+
+        self.assertIn('Unit Price', text)
+        self.assertNotIn('(円)', text)
+
+    def test_document_layout_saves_the_currency_code_choice(self):
+        company = self.company_data['company']
+        wizard = self.env['base.document.layout'].with_context(account_document_layout_configurator=True).create({
+            'company_id': company.id,
+            'report_layout_id': self.env.ref('l10n_jp.report_layout_jp_standard').id,
+        })
+        self.assertTrue(wizard.l10n_jp_is_jp_layout)
+        wizard.l10n_jp_display_currency_code = False
+        self.assertFalse(company.l10n_jp_display_currency_code)
+
     def test_payment_receipt_uses_jp_honorific(self):
         payment = self.init_payment(100.0, partner=self.partner_a, post=True)
 

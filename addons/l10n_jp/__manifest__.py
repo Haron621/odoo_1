@@ -45,6 +45,7 @@ Note:
         'report/jp_report.xml',
         'report/jp_account_report.xml',
         'data/report_layout.xml',
+        'views/base_document_layout_views.xml',
     ],
     'assets': {
         'web.report_assets_common': [

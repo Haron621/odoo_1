@@ -1,9 +1,16 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from odoo import models
+from odoo import fields, models
 
 
 class ResCompany(models.Model):
     _inherit = 'res.company'
+
+    l10n_jp_display_currency_code = fields.Boolean(
+        string="Display Currency Code",
+        default=True,
+        help="Name the currency in the price column headers of the Japanese Business layout: "
+             "円 for yen, its code (USD, CNY, ...) for any other currency.",
+    )
 
     def _l10n_jp_hide_zero_decimals(self, amounts):
         """
