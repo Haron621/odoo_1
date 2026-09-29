@@ -1,3 +1,4 @@
+import { onWillStart, onWillUpdateProps } from "@odoo/owl";
 import { useSubEnv } from "@web/owl2/utils";
 import {
     ProductLabelSectionAndNoteListRender,
@@ -58,6 +59,7 @@ function getComboRecords(listRecords, record) {
 }
 
 export class SaleOrderLineListRenderer extends ProductLabelSectionAndNoteListRender {
+    static template = "sale.SaleOrderLineListRenderer";
     static recordRowTemplate = 'sale.ListRenderer.RecordRow';
 
     setup() {
@@ -68,6 +70,50 @@ export class SaleOrderLineListRenderer extends ProductLabelSectionAndNoteListRen
         useSubEnv({
             shouldCollapse: this.shouldCollapse.bind(this),
         });
+
+        this.orm = useService("orm");
+        this.unloadedLines = {};
+        onWillStart(() => this.loadUnloadedLines(this.props));
+        onWillUpdateProps((nextProps) => this.loadUnloadedLines(nextProps));
+    }
+
+    // Lines of the previous pages that were never loaded are needed by `lineNumberOffset`
+    async loadUnloadedLines({ list, hideComposition }) {
+        const ids = list.currentIds
+            .slice(0, list.offset)
+            .filter((id) => !list._cache[id] && !this.unloadedLines[id]);
+        if (hideComposition && ids.length) {
+            const fields = ["display_type", "collapse_composition"];
+            for (const line of await this.orm.read(list.resModel, ids, fields)) {
+                this.unloadedLines[line.id] = line;
+            }
+        }
+    }
+
+    // Lines hidden by their section are not numbered, as on the portal and PDF
+    get lineNumberOffset() {
+        const { list, hideComposition } = this.props;
+        if (!hideComposition) {
+            return list.offset;
+        }
+        let lineCount = 0;
+        let section = null;
+        let subsection = null;
+        for (const id of list.currentIds.slice(0, list.offset)) {
+            const line = list._cache[id]?.data ?? this.unloadedLines[id];
+            if (line.display_type === "line_section") {
+                [section, subsection] = [line, null];
+            } else if (line.display_type === "line_subsection") {
+                subsection = line;
+                if (section?.collapse_composition) {
+                    continue;
+                }
+            } else if (section?.collapse_composition || subsection?.collapse_composition) {
+                continue;
+            }
+            lineCount++;
+        }
+        return lineCount;
     }
 
     /**
