@@ -160,44 +160,54 @@ export class ImagePositionOverlay extends Component {
         const iframeRect = this.iframeEl.getBoundingClientRect();
         const targetContainerRect = this.props.targetEl.getBoundingClientRect();
         const scale = this.getIframeContainerScale();
+        // scaledRect: target element rect in iframe-local coordinates
         const scaledRect = new DOMRect(
             scale * targetContainerRect.x,
             scale * targetContainerRect.y,
             scale * targetContainerRect.width,
             scale * targetContainerRect.height
         );
-
+        // viewportRect: the visible part of the target element in full-page
+        // screen coordinates, used for elements rendered outside the iframe
+        // (e.g. o_we_overlay_mask).
+        const bottom = Math.min(scaledRect.bottom, iframeRect.height);
+        const viewportRect = new DOMRect(
+            iframeRect.left + scaledRect.left,
+            iframeRect.top + Math.max(scaledRect.top, 0),
+            scaledRect.width,
+            bottom - scaledRect.top
+        );
         // Make a cut-out in the overlay mask to highlight the editing element.
         // "polygon" is used because "rect" would do the inverse.
         const clipPath = `polygon(
             evenodd,
             0 0, 100% 0,100% 100%, 0 100%, 0 0,
-            ${scaledRect.left}px ${scaledRect.top}px,
-            ${scaledRect.right}px ${scaledRect.top}px,
-            ${scaledRect.right}px ${scaledRect.bottom}px,
-            ${scaledRect.left}px ${scaledRect.bottom}px,
-            ${scaledRect.left}px ${scaledRect.top}px)
+            ${viewportRect.left}px ${viewportRect.top}px,
+            ${viewportRect.right}px ${viewportRect.top}px,
+            ${viewportRect.right}px ${viewportRect.bottom}px,
+            ${viewportRect.left}px ${viewportRect.bottom}px,
+            ${viewportRect.left}px ${viewportRect.top}px)
         `;
         this.overlayMaskRef.el.style.clipPath = clipPath;
         if (this.builderOverlayContainerEl) {
             this.builderOverlayContainerEl.style.clipPath = clipPath;
         }
 
-        // The overlay covers the whole iframe excluding the scrollbar.
+        // The overlay covers the whole window including builder sidebar.
         Object.assign(this.overlayRef.el.style, {
-            left: `${iframeRect.left}px`,
-            top: `${iframeRect.top}px`,
-            height: `${this.props.editable.ownerDocument.body.clientHeight * scale}px`,
-            width: `${this.props.editable.ownerDocument.body.clientWidth * scale}px`,
+            left: "0px",
+            top: "0px",
+            width: `${window.innerWidth}px`,
+            height: `${window.innerHeight}px`,
         });
 
         // The overlay content covers the editing element.
         Object.assign(this.overlayContentRef.el.style, {
-            left: `${scaledRect.left}px`,
-            top: `${scaledRect.top}px`,
+            left: `${viewportRect.left}px`,
+            top: `${viewportRect.top}px`,
         });
         const overlayButtonsEl = this.overlayContentRef.el.querySelector(".o_we_overlay_buttons");
-        overlayButtonsEl.style.top = `${Math.max(0, -scaledRect.top)}px`;
+        overlayButtonsEl.style.top = `${Math.max(0, -viewportRect.top)}px`;
         this.draggerRef.el.style.setProperty("width", `${scaledRect.width}px`, "important");
         this.draggerRef.el.style.setProperty("height", `${scaledRect.height}px`, "important");
 
