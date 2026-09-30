@@ -736,6 +736,13 @@ class Channel(models.Model):
         # The current client code might be setting the key to True on sending
         # message but it is only useful when targeting customers in chatter.
         # This value should simply be set to False in channels no matter what.
+        if (
+            not self.is_member
+            and message_type != 'notification'
+            and not kwargs.get('author_id')  # automated script posting on behalf of someone else
+        ):
+            self._find_or_create_member_for_self()
+
         return super(Channel, self.with_context(mail_create_nosubscribe=True, mail_post_autofollow=False)).message_post(message_type=message_type, **kwargs)
 
     def _message_post_after_hook(self, message, msg_vals):
