@@ -22,6 +22,10 @@ _logger = logging.getLogger(__name__)
 
 EU_EXTRA_VAT_CODES_INV = frozendict({v: k for k, v in EU_EXTRA_VAT_CODES.items()})
 
+# Countries where a national tax ID is also accepted in the VAT field
+# and is not valid with a country prefix, so we don't add one.
+EU_VAT_UNPREFIXED = ['RO', 'HU', 'DE']
+
 _ref_vat = frozendict({
     'al': 'ALJ91402501L',
     'ar': '20055361682',
@@ -126,6 +130,8 @@ class ResPartner(models.Model):
         prefixed_country = ''
         eu_prefix_country_group = self.env['res.country.group'].search([('code', '=', 'EU_PREFIX')], limit=1)
         country_code = EU_EXTRA_VAT_CODES_INV.get(vat_prefix, vat_prefix)
+        if not vat_prefix and 'EU_PREFIX' in country.country_group_codes and country.code not in EU_VAT_UNPREFIXED:
+            vat_prefix = country_code = country.code
         if country_code in eu_prefix_country_group.country_ids.mapped('code'):
             if 'EU_PREFIX' in country.country_group_codes and vat_prefix:
                 vat = vat_number
