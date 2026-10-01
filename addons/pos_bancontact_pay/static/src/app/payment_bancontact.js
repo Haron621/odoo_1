@@ -10,6 +10,9 @@ export class PaymentBancontact extends PaymentInterface {
     }
 
     async sendPaymentRequest(line) {
+        if (line.isBancontactRefund) {
+            return this.sendRefundRequest(line);
+        }
         if (
             !line.bancontact_id ||
             !line.qr_code ||
@@ -41,6 +44,28 @@ export class PaymentBancontact extends PaymentInterface {
             this.pos.displayQrCode(line);
         }
         return true;
+    }
+
+    async sendRefundRequest(line) {
+        const { bancontact_refund_id, bancontact_refund_status } = await this.callPaymentMethod(
+            "create_bancontact_refund",
+            [
+                line.payment_method_id.id,
+                {
+                    refunded_payment_id: line.bancontact_refunded_payment_id.id,
+                    amount: line.amount,
+                    uuid: line.uuid,
+                    description: _t(
+                        "Refund at %s\nPOS %s",
+                        this.pos.company.name,
+                        this.pos.config.name
+                    ),
+                },
+            ]
+        );
+        line.bancontact_refund_id = bancontact_refund_id;
+        line.bancontact_refund_status = bancontact_refund_status;
+        return bancontact_refund_status !== "failed";
     }
 
     async sendPaymentCancel(line) {
