@@ -68,7 +68,6 @@ class TestProductCatalog(HttpCase, SaleCommon):
         return {
             "quantity": 0,
             "readOnly": False,
-            "productType": product.type,
             "price": product.lst_price,
         }
 
