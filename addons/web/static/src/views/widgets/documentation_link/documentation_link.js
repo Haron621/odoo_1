@@ -1,7 +1,6 @@
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
-import { Component, t, useProps } from "@odoo/owl";
+import { Component, t, useProps, computed } from "@odoo/owl";
 import { registry } from "@web/core/registry";
-import { documentationUrl } from "@web/core/utils/urls";
 
 const LINK_REGEX = new RegExp("^https?://");
 
@@ -9,18 +8,22 @@ export class DocumentationLink extends Component {
     static template = "web.DocumentationLink";
     props = useProps({
         ...standardWidgetProps,
-        class: t.or([t.string(), t.object()]).optional("me-2"),
+        class: t.or([t.string(), t.object()]).optional(),
         record: t.object().optional(), // The record is not needed in this widget
         path: t.string(),
         label: t.string().optional(),
-        icon: t.string().optional(),
+        hideIcon: t.boolean().optional(false),
     });
+
+    label = computed(() =>
+        typeof this.props.label === "string" ? this.props.label : "View Documentation"
+    );
 
     get url() {
         if (LINK_REGEX.test(this.props.path)) {
             return this.props.path;
         } else {
-            return documentationUrl(this.props.path);
+            return "/web/documentation/open" + this.props.path;
         }
     }
 
@@ -40,11 +43,11 @@ export class DocumentationLink extends Component {
 export const documentationLink = {
     component: DocumentationLink,
     extractProps: ({ attrs }) => {
-        const { path, label, icon, class: classes } = attrs;
+        const { path, label, "hide-icon": hideIcon, class: classes } = attrs;
         return {
             path,
             label,
-            icon,
+            hideIcon: hideIcon === "True",
             class: classes,
         };
     },

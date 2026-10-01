@@ -1,5 +1,4 @@
 import { registry } from "@web/core/registry";
-import { documentationUrl } from "@web/core/utils/urls";
 import { UrlField, urlField } from "../url/url_field";
 
 class DocumentationLinkField extends UrlField {
@@ -10,7 +9,7 @@ class DocumentationLinkField extends UrlField {
     get formattedHref() {
         const href = super.formattedHref;
         const matches = href.match(/odoo\.com\/documentation\/latest(.*)$/);
-        return matches ? documentationUrl(matches[1]) : href;
+        return matches ? "/web/documentation/open" + matches[1] : href;
     }
 }
 
