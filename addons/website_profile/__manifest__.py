@@ -23,6 +23,7 @@
             'website_profile/static/src/interactions/**/*',
             ('remove', 'website_profile/static/src/interactions/**/*.edit.js'),
         ],
+        # Lazy loaded on the frontend, after html_editor.assets_editor_frontend
         'website_profile.assets_html_editor': [
             ('include', 'web._assets_helpers'),
             ('include', 'web._assets_frontend_helpers'),
@@ -30,7 +31,6 @@
             'web/static/lib/bootstrap/scss/_variables.scss',
             'web/static/lib/bootstrap/scss/_variables-dark.scss',
             'web/static/lib/bootstrap/scss/_maps.scss',
-            ('include', 'html_editor.assets_editor'),
             'web/static/src/views/fields/file_handler.*',
             'website_profile/static/src/components/**/*',
         ],

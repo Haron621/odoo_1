@@ -12,6 +12,7 @@ export class ProfileEditor extends Interaction {
     };
 
     async openDialog() {
+        await this.waitFor(loadBundle("html_editor.assets_editor_frontend"));
         await this.waitFor(loadBundle("website_profile.assets_html_editor"));
         const { ProfileDialog } = odoo.loader.modules.get(
             "@website_profile/components/profile_dialog/profile_dialog"

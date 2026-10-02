@@ -100,9 +100,11 @@ export class WebsiteForum extends Interaction {
 
         const textareaEls = this.el.querySelectorAll("textarea.o_wysiwyg_loader");
         if (textareaEls.length) {
-            this.waitFor(loadBundle("website_profile.assets_html_editor")).then(() =>
-                this.mountWysiwygs(textareaEls)
-            );
+            this.waitFor(
+                loadBundle("html_editor.assets_editor_frontend").then(() =>
+                    loadBundle("website_profile.assets_html_editor")
+                )
+            ).then(() => this.mountWysiwygs(textareaEls));
         }
 
         this.el.querySelectorAll(".o_wforum_bio_popover").forEach((authorBox) => {
