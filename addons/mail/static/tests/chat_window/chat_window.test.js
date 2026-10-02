@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     assertChatBubbleAndWindowImStatus,
     assertChatHub,
     click,
@@ -378,9 +379,9 @@ test("Close active thread action in chatwindow on ESCAPE", async () => {
     await contains(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-dropdown-item:text('Invite People')");
-    await contains(".o-discuss-ChannelInvitation");
+    await contains(actionPanel("Invite people"));
     triggerHotkey("Escape");
-    await contains(".o-discuss-ChannelInvitation", { count: 0 });
+    await contains(actionPanel("Invite people"), { count: 0 });
     await contains(".o-mail-ChatWindow");
 });
 

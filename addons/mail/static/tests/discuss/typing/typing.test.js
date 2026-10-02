@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -869,18 +870,15 @@ test("[text composer] show typing in member list", async () => {
             is_typing: true,
         })
     );
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']");
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`);
     await insertText(".o-mail-Composer-input", "HelloWorld!");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`
-    );
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`);
     await click(".o-mail-Composer button:enabled[aria-label='Send']");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`,
-        { count: 0 }
-    );
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`, {
+        count: 0,
+    });
     await advanceTime(Store.OTHER_LONG_TYPING);
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']", { count: 0 });
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`, { count: 0 });
     // check editing doesn't trigger is typing
     await contains(".o-mail-Message-content:has(:text('HelloWorld!'))");
     await click(".o-mail-Message [title='Expand']");
@@ -895,11 +893,10 @@ test("[text composer] show typing in member list", async () => {
         })
     );
     await animationFrame();
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`,
-        { count: 0 }
-    );
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`);
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`, {
+        count: 0,
+    });
 });
 
 test.tags("html composer");
@@ -926,7 +923,7 @@ test("show typing in member list", async () => {
             is_typing: true,
         })
     );
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']");
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`);
     const threadComposerEditor = {
         document,
         editable: document.querySelector(
@@ -934,16 +931,13 @@ test("show typing in member list", async () => {
         ),
     };
     await htmlInsertText(threadComposerEditor, "HelloWorld!");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`
-    );
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`);
     await click(".o-mail-Composer button:enabled[aria-label='Send']");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`,
-        { count: 0 }
-    );
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`, {
+        count: 0,
+    });
     await advanceTime(Store.OTHER_LONG_TYPING);
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']", { count: 0 });
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`, { count: 0 });
     // check editing doesn't trigger is typing
     await contains(".o-mail-Message-content:has(:text('HelloWorld!'))");
     await click(".o-mail-Message [title='Expand']");
@@ -965,11 +959,10 @@ test("show typing in member list", async () => {
         })
     );
     await animationFrame();
-    await contains(".o-discuss-ChannelMemberList [title='Other 10 is typing...']");
-    await contains(
-        `.o-discuss-ChannelMemberList [title='${serverState.partnerName} is typing...']`,
-        { count: 0 }
-    );
+    await contains(`${actionPanel("Members")} [title='Other 10 is typing...']`);
+    await contains(`${actionPanel("Members")} [title='${serverState.partnerName} is typing...']`, {
+        count: 0,
+    });
 });
 
 test("[text composer] switching to another channel triggers notify_typing to stop", async () => {

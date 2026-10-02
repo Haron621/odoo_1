@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -47,11 +48,11 @@ test("should show member list when clicking on member list button in thread view
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // open by default
+    await contains(actionPanel("Members")); // open by default
     await click("[title='Members']");
-    await contains(".o-discuss-ChannelMemberList", { count: 0 });
+    await contains(actionPanel("Members"), { count: 0 });
     await click("[title='Members']");
-    await contains(".o-discuss-ChannelMemberList");
+    await contains(actionPanel("Members"));
 });
 
 test("should have correct members in member list", async () => {
@@ -95,9 +96,9 @@ test("members should be correctly categorised into online/offline/others", async
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList h6:text('Online - 3')");
-    await contains(".o-discuss-ChannelMemberList h6:text('Offline - 1')");
-    await contains(".o-discuss-ChannelMemberList h6:text('Others - 1')");
+    await contains(`${actionPanel("Members")} h6:text('Online - 3')`);
+    await contains(`${actionPanel("Members")} h6:text('Offline - 1')`);
+    await contains(`${actionPanel("Members")} h6:text('Others - 1')`);
 });
 
 test("chat with member should be opened after clicking on channel member", async () => {
@@ -138,7 +139,7 @@ test("Avatar card shows local timezone", async () => {
     listenStoreFetch(["avatar_card"]);
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList");
+    await contains(actionPanel("Members"));
     // Case 1: correspondent tz !== self tz
     await click(".o-discuss-ChannelMember:has(:text('Demo'))");
     await waitStoreFetch(["avatar_card"]);
@@ -180,9 +181,7 @@ test("should show a button to load more members if they are not all loaded", asy
     await start();
     await openDiscuss(channelId);
     pyEnv["discuss.channel"].write([channelId], { channel_member_ids });
-    await contains(
-        ".o-mail-ActionPanel:has(.o-mail-ActionPanel-header:contains('Members')) button:text('Load more')"
-    );
+    await contains(`${actionPanel("Members")} button:text('Load more')`);
 });
 
 test("Load more button should load more members", async () => {
@@ -200,9 +199,7 @@ test("Load more button should load more members", async () => {
     await start();
     await openDiscuss(channelId);
     await contains(".o-discuss-ChannelMember", { count: 101 });
-    await click(
-        ".o-mail-ActionPanel:has(.o-mail-ActionPanel-header:contains('Members')) [title='Load more']"
-    );
+    await click(`${actionPanel("Members")} [title='Load more']`);
     await contains(".o-discuss-ChannelMember", { count: 102 });
 });
 
@@ -213,13 +210,13 @@ test("Channel member count update after user joined", async () => {
     pyEnv["res.partner"].create({ name: "Harry", user_ids: [userId] });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
-    await contains(".o-discuss-ChannelMemberList h6:text('Online - 1')");
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
+    await contains(`${actionPanel("Members")} h6:text('Online - 1')`);
     await click("[title='Add People']");
     await click(".o-discuss-ChannelInvitation-selectable:has(:text('Harry'))");
     await click(".o-discuss-ChannelInvitation button:text('Invite'):enabled");
     await contains(".o-discuss-ChannelInvitation", { count: 0 });
-    await contains(".o-discuss-ChannelMemberList h6:text('Online - 2')");
+    await contains(`${actionPanel("Members")} h6:text('Online - 2')`);
 });
 
 test("Channel member count update after user left", async () => {
@@ -259,7 +256,7 @@ test("Can search member", async () => {
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // This is from auto-open of member list panel
+    await contains(actionPanel("Members")); // This is from auto-open of member list panel
     await contains(".o-discuss-ChannelMember", { count: 3 });
     await insertText("input[placeholder='Search members']", "Alice");
     await contains(".o-discuss-ChannelMember", { count: 1 });
@@ -289,7 +286,7 @@ test("Search does not fetch when term is more specific after empty result", asyn
     listenStoreFetch("/discuss/channel/members", { logParams: ["/discuss/channel/members"] });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
     await waitStoreFetch(
         `/discuss/channel/members - ${JSON.stringify({
             channel_id: channelId,
@@ -320,7 +317,7 @@ test("Search does not fetch when term is more specific after empty result", asyn
         })}`
     );
     await contains(".o-discuss-ChannelMember", { count: 0 });
-    await contains(".o-discuss-ChannelMemberList span:text('No members found.')");
+    await contains(`${actionPanel("Members")} span:text('No members found.')`);
     await insertText("input[placeholder='Search members']", "z");
     await animationFrame();
     expect.verifySteps([]); // no search 'azz'
@@ -350,20 +347,15 @@ test("Shows a hint to narrow member search when there's more than 100 matches", 
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList");
-    await contains(
-        ".o-mail-ActionPanel:has(.o-mail-ActionPanel-header:contains('Members')) button:text('Load more')"
-    );
+    await contains(actionPanel("Members"));
+    await contains(`${actionPanel("Members")} button:text('Load more')`);
     await contains(".o-discuss-ChannelMember", { count: 101 });
     await insertText("input[placeholder='Search members']", "Alice");
     await contains(".o-discuss-ChannelMember", { count: 100 });
-    await contains(
-        ".o-discuss-ChannelMemberList span:text('Showing first 100 members. Narrow your search to see more.')"
-    );
-    await contains(
-        ".o-mail-ActionPanel:has(.o-mail-ActionPanel-header:contains('Members')) button:text('Load more')",
-        { count: 0 }
-    );
+    await contains(`${actionPanel("Members")} span`, {
+        text: "Showing first 100 members. Narrow your search to see more.",
+    });
+    await contains(`${actionPanel("Members")} button:text('Load more')`, { count: 0 });
 });
 
 test("Members are partitioned by online/offline", async () => {

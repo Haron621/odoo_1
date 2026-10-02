@@ -3,6 +3,7 @@ import { waitUntilSubscribe } from "@bus/../tests/bus_test_helpers";
 import { OutOfFocusService } from "@mail/core/common/out_of_focus_service";
 import { DiscussApp } from "@mail/core/public_web/discuss_app/discuss_app_model";
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -800,8 +801,8 @@ test("Can right-click on message to opens message actions dropdown", async () =>
     await click(".o-mail-NotificationItem:has(:text('General'))");
     await contains(".o-mail-DiscussContent-threadName:value('General')");
     await click("button[title='Pinned Messages']");
-    await contains(".o-discuss-PinnedMessagesPanel .o-mail-Message");
-    await rightClick(".o-discuss-PinnedMessagesPanel .o-mail-Message");
+    await contains(`${actionPanel("Pinned Messages")} .o-mail-Message`);
+    await rightClick(`${actionPanel("Pinned Messages")} .o-mail-Message`);
     await expect.waitForSteps(["Message.onContextMenu"]);
     await animationFrame();
     expect.verifySteps([]);
@@ -2434,7 +2435,7 @@ test("Notification settings: basic rendering", async () => {
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
     await click("[title='Notification Settings']");
     await contains("button:text('All Messages')");
     await contains("button:text('Mentions Only')");
@@ -2505,7 +2506,7 @@ test("Notification settings: mute/unmute conversation works correctly", async ()
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
     await click("[title='Notification Settings']");
     // dropdown requires an extra delay before click (because handler is registered in useEffect)
     await contains("button:text('Mute Conversation')");

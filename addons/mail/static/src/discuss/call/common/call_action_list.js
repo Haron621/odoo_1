@@ -168,13 +168,6 @@ export class CallActionList extends Component {
                                   this.callActionsParams,
                                   {
                                       actions: moreActions,
-                                      dropdownMenuClass: attClassObjectToString({
-                                          "m-0 mb-1 overflow-x-hidden": true,
-                                          "o-discuss-CallActionList-menu": Boolean(
-                                              this.ancestors.inMeetingView
-                                          ),
-                                      }),
-                                      dropdownPosition: "top-end",
                                       name: this.MORE,
                                   },
                                   sequenceGroup
@@ -197,13 +190,6 @@ export class CallActionList extends Component {
                             this.callActionsParams,
                             {
                                 actions: [layoutActions],
-                                dropdownMenuClass: attClassObjectToString({
-                                    "o-discuss-CallActionList-callLayout m-0 mb-1 overflow-x-hidden": true,
-                                    "o-discuss-CallActionList-menu o-inMeetingView": Boolean(
-                                        this.ancestors.inMeetingView
-                                    ),
-                                }),
-                                dropdownPosition: "top-end",
                                 id: "call-layout",
                                 name: this.MORE,
                             },
@@ -266,13 +252,6 @@ export class CallActionList extends Component {
                       this.callActionsParams,
                       {
                           actions: moreGroups,
-                          dropdownMenuClass: attClassObjectToString({
-                              "m-0 mb-1 overflow-x-hidden": true,
-                              "o-discuss-CallActionList-menu": Boolean(
-                                  this.ancestors.inMeetingView
-                              ),
-                          }),
-                          dropdownPosition: "top-end",
                           id: "small-screen-more",
                           name: this.MORE,
                       },
@@ -293,6 +272,45 @@ export class CallActionList extends Component {
             return getMeetingAction(callActionComponent ?? InlineAction);
         }
         return callActionComponent;
+    }
+
+    /**
+     * The call actions open their panel in a dropdown above the bar; the actions of the meeting
+     * that its "More" lists still open theirs in the meeting.
+     *
+     * @type {import("@mail/core/common/action_list").ActionPanelContainer}
+     */
+    getPanelContainer({ action }) {
+        const inMeetingView = Boolean(this.ancestors.inMeetingView);
+        if (action.id === "more-action:call-layout") {
+            return {
+                type: "dropdown",
+                position: "top-end",
+                menuClass: attClassObjectToString({
+                    "o-discuss-CallActionList-callLayout m-0 mb-1 overflow-x-hidden": true,
+                    "o-discuss-CallActionList-menu o-inMeetingView": inMeetingView,
+                }),
+            };
+        }
+        if (action.definition.isMoreAction) {
+            return {
+                type: "dropdown",
+                position: "top-end",
+                menuClass: attClassObjectToString({
+                    "m-0 mb-1 overflow-x-hidden": true,
+                    "o-discuss-CallActionList-menu": inMeetingView,
+                }),
+            };
+        }
+        if (["quick-video-settings", "quick-voice-settings"].includes(action.id)) {
+            return {
+                type: "dropdown",
+                position: "top-end",
+                menuClass: inMeetingView
+                    ? "o-discuss-CallActionList-menu overflow-x-hidden"
+                    : "p-1 overflow-x-hidden",
+            };
+        }
     }
 
     get callActionsParams() {
