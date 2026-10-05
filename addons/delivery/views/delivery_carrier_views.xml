@@ -62,7 +62,7 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="toggle_prod_environment"
-                                invisible="not prod_environment or delivery_type == 'fixed' or delivery_type == 'base_on_rule'"
+                                invisible="not prod_environment or delivery_type == 'in_house'"
                                 class="oe_stat_button"
                                 type="object" icon="play_arrow">
                             <div class="o_stat_info o_field_widget">
@@ -72,7 +72,7 @@
                         </button>
                         <!-- transfer referenced here due to view inheritance issue in current master (post-saas-16) -->
                         <button name="toggle_prod_environment"
-                                invisible="prod_environment or delivery_type == 'fixed' or delivery_type == 'base_on_rule'"
+                                invisible="prod_environment or delivery_type == 'in_house'"
                                 class="oe_stat_button"
                                 type="object" icon="stop">
                             <div class="o_stat_info o_field_widget">
@@ -81,7 +81,7 @@
                             </div>
                         </button>
                         <button name="toggle_debug"
-                                invisible="delivery_type == 'fixed' or delivery_type == 'base_on_rule' or debug_logging"
+                                invisible="delivery_type == 'in_house' or debug_logging"
                                 class="oe_stat_button"
                                 type="object" icon="code">
                             <div class="o_stat_info o_field_widget">
@@ -89,7 +89,7 @@
                             </div>
                         </button>
                         <button name="toggle_debug"
-                                invisible="delivery_type == 'fixed' or delivery_type == 'base_on_rule' or not debug_logging"
+                                invisible="delivery_type == 'in_house' or not debug_logging"
                                 class="oe_stat_button"
                                 type="object" icon="code">
                             <div class="o_stat_info o_field_widget">
@@ -98,6 +98,11 @@
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="provider_icon"
+                            widget="image_url"
+                            class="oe_avatar"
+                            options="{'size': [90, 90]}"
+                            invisible="not provider_icon"/>
                     <div class="oe_title" name="title">
                         <label for="name" string="Delivery Method"/>
                         <h1>
@@ -111,23 +116,23 @@
                             <field name="prod_environment" invisible="1"/>
                             <field name="debug_logging" invisible="1"/>
                             <field name="delivery_type" />
-                            <field name="integration_level" widget="radio" invisible="delivery_type == 'fixed' or delivery_type == 'base_on_rule'"/>
+                            <field name="integration_level" widget="radio" invisible="delivery_type == 'in_house'"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="fixed_price"
                                     widget="monetary"
                                     class="oe_inline"
-                                    invisible="delivery_type != 'fixed'"/>
+                                    invisible="delivery_type != 'in_house' or price_rule_ids"/>
                             <field name="margin"
                                     string="Margin on Rate"
                                     widget="percentage"
                                     class="oe_inline"
-                                    invisible="delivery_type == 'fixed'"/>
+                                    invisible="delivery_type == 'in_house'"/>
                             <field name="fixed_margin"
                                     string="Additional margin"
                                     widget="monetary"
-                                    invisible="delivery_type == 'fixed'"/>
-                            <label for="free_over" invisible="delivery_type == 'base_on_rule'"/>
-                            <div name="free_over_amount" invisible="delivery_type == 'base_on_rule'">
+                                    invisible="delivery_type == 'in_house'"/>
+                            <label for="free_over"/>
+                            <div name="free_over_amount">
                                 <field name="free_over"/>
                                 <field name="amount"
                                         widget="monetary"
@@ -135,7 +140,7 @@
                                         invisible="not free_over"
                                         required="free_over"/>
                             </div>
-                            <field name="invoice_policy" widget="radio" invisible="delivery_type in ('fixed', 'base_on_rule') or integration_level == 'rate'"/>
+                            <field name="invoice_policy" widget="radio" invisible="delivery_type == 'in_house' or integration_level == 'rate'"/>
                             <field name="supports_shipping_insurance" invisible="1"/>
                             <label for="shipping_insurance" String="Shipping Insurance" invisible="not supports_shipping_insurance"/>
                             <div invisible="not supports_shipping_insurance">
@@ -144,7 +149,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page name="pricing" string="Pricing" invisible="delivery_type != 'base_on_rule'">
+                        <page name="pricing" string="Pricing Rules" invisible="delivery_type != 'in_house'">
                             <group name="general">
                                 <field name="price_rule_ids" nolabel="1"/>
                             </group>
@@ -195,11 +200,8 @@
                                 </group>
                             </group>
                         </page>
-                        <page string="Description" name="description">
-                            <field name="carrier_description" placeholder="Delivery method details to be included at bottom sales orders and their confirmation emails. E.g. Instructions for customers to follow."/>
-                        </page>
                         <page string="Configuration" name="configuration">
-                            <group>
+                            <group name="configuration_columns">
                                 <group name="configuration_details">
                                     <field name="product_id" context="{
                                         'default_type': 'service',
@@ -208,8 +210,16 @@
                                         'default_invoice_policy': 'order',
                                     }"/>
                                     <field name="allow_cash_on_delivery" invisible="not supports_cash_on_delivery"/>
-                                    <field name="tracking_url" placeholder="i.e. https://ekartlogistics.com/shipmenttrack/&lt;shipmenttrackingnumber&gt;" invisible="delivery_type not in ('fixed', 'base_on_rule')"/>
+                                    <field name="tracking_url" placeholder="i.e. https://ekartlogistics.com/shipmenttrack/&lt;shipmenttrackingnumber&gt;" invisible="delivery_type != 'in_house'"/>
                                     <field name="company_id" groups="base.group_multi_company" placeholder="Visible to all"/>
+                                </group>
+                                <group string="Description" name="description_details">
+                                    <field
+                                        colspan="2"
+                                        name="carrier_description"
+                                        nolabel="1"
+                                        placeholder="Delivery method details to be included at bottom sales orders and their confirmation emails. E.g. Instructions for customers to follow."
+                                    />
                                 </group>
                             </group>
                         </page>

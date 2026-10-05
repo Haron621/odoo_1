@@ -15,6 +15,12 @@
             <field name="invoice_policy" position="attributes">
                 <attribute name="invisible" add="delivery_type == 'in_store'" separator=" or "/>
             </field>
+            <field name="margin" position="attributes">
+                <attribute name="invisible" add="delivery_type == 'in_store'" separator=" or "/>
+            </field>
+            <field name="fixed_margin" position="attributes">
+                <attribute name="invisible" add="delivery_type == 'in_store'" separator=" or "/>
+            </field>
             <group name="country_details" position="attributes">
                 <attribute name="invisible" add="delivery_type == 'in_store'" separator=" or "/>
             </group>
@@ -35,13 +41,12 @@
             </field>
             <page name="pricing" position="before">
                 <page string="Stores" name="warehouses" invisible="delivery_type != 'in_store'">
-                    <field name="warehouse_ids">
+                    <field name="warehouse_ids" class="o_in_store_warehouses">
                         <list create="False">
+                            <control>
+                                <create string="Add a store"/>
+                            </control>
                             <field name="name"/>
-                            <field name="opening_hours"/>
-                            <field name="lot_stock_id" groups="stock.group_stock_multi_locations"/>
-                            <field name="partner_id"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
                         </list>
                     </field>
                 </page>

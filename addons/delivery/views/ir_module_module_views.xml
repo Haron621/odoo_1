@@ -8,6 +8,9 @@
         <field name="mode">primary</field>
         <field name="priority">20</field>
         <field name="arch" type="xml">
+            <list position="attributes">
+                <attribute name="default_order">sequence, name</attribute>
+            </list>
             <field name="name" position="attributes">
                 <attribute name="column_invisible">1</attribute>
             </field>
@@ -30,15 +33,23 @@
         <field name="mode">primary</field>
         <field name="priority">20</field>
         <field name="arch" type="xml">
-            <button name="button_immediate_install" position="after">
-                <button
-                    string="Delivery Methods"
-                    type="object"
-                    name="action_view_delivery_methods"
-                    invisible="state != 'installed'"
-                    class="btn btn-primary btn-sm"
-                />
-            </button>
+            <kanban position="attributes">
+                <attribute name="default_order">sequence, name</attribute>
+            </kanban>
+            <xpath expr="//h2/field[@name='shortdesc']" position="replace">
+                <t t-if="record.name.raw_value == 'delivery'">In-house Delivery</t>
+                <t t-elif="record.name.raw_value == 'website_sale_collect'">Pick up in store</t>
+                <field t-else="" name="shortdesc"/>
+            </xpath>
+            <xpath expr="//small/field[@name='summary']" position="replace">
+                <t t-if="record.name.raw_value == 'delivery'">
+                    Deliver orders with your own drivers.
+                </t>
+                <t t-elif="record.name.raw_value == 'website_sale_collect'">
+                    Let customers collect their online orders in your stores.
+                </t>
+                <field t-else="" groups="!base.group_no_one" name="summary"/>
+            </xpath>
             <a id="module_info" position="replace"/>
         </field>
     </record>

@@ -34,7 +34,7 @@ class TestDeliveryCost(DeliveryCommon):
         cls.normal_delivery = cls._prepare_carrier(
             product=cls.product_delivery_normal,
             name="Normal Delivery Charges",
-            delivery_type="fixed",
+            delivery_type="in_house",
             fixed_price=10.0,
         )
         cls.partner_4 = cls.env["res.partner"].create({
@@ -374,11 +374,11 @@ class TestDeliveryCost(DeliveryCommon):
         self.assertEqual(len(error_lines), 1, "Only 1 line should have an invalid weight")
         self.assertTrue(error_lines.combo_item_id, "The erroneous line should be part of a combo")
 
-    def test_fixed_price_margins(self):
-        """Margins should be ignored for fixed price carriers."""
+    def test_in_house_price_margins(self):
+        """Margins should be ignored for in-house carriers."""
         sale_order = self.env["sale.order"].create({
             "partner_id": self.partner.id,
-            "name": "SO - fixed del",
+            "name": "SO - in-house del",
             "order_line": [(0, 0, {"product_id": self.product.id, "product_uom_qty": 1})],
         })
         self.normal_delivery.fixed_margin = 100
@@ -393,6 +393,56 @@ class TestDeliveryCost(DeliveryCommon):
 
         line = sale_order.order_line.filtered("is_delivery")
         self.assertEqual(line.price_unit, self.normal_delivery.fixed_price)
+
+    def test_in_house_price_rules_take_precedence(self):
+        """Pricing rules should take precedence over the price of in-house carriers, and the carrier
+        should be unavailable when no rule matches."""
+        sale_order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "order_line": [Command.create({"product_id": self.product.id, "product_uom_qty": 1})],
+        })
+        self.normal_delivery.price_rule_ids = [
+            Command.create({
+                "variable": "weight",
+                "operator": "<=",
+                "max_value": 5,
+                "list_base_price": 3,
+            }),
+        ]
+
+        rate = self.normal_delivery.rate_shipment(sale_order)
+        self.assertTrue(rate["success"])
+        self.assertEqual(rate["price"], 3, "The matching rule should be used instead of the price.")
+        self.assertTrue(self.normal_delivery._is_available_for_order(sale_order))
+
+        sale_order.order_line.product_uom_qty = 10
+        rate = self.normal_delivery.rate_shipment(sale_order)
+        self.assertFalse(rate["success"], "No rule matches: the price should not be used.")
+        self.assertFalse(self.normal_delivery._is_available_for_order(sale_order))
+
+    def test_in_house_price_rules_free_over(self):
+        """Free shipping should apply on in-house carriers using pricing rules."""
+        sale_order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "order_line": [Command.create({"product_id": self.product.id, "price_unit": 750.0})],
+        })
+        self.normal_delivery.write({
+            "free_over": True,
+            "amount": 100,
+            "price_rule_ids": [
+                Command.create({
+                    "variable": "price",
+                    "operator": ">=",
+                    "max_value": 0,
+                    "list_base_price": 20,
+                }),
+            ],
+        })
+
+        rate = self.normal_delivery.rate_shipment(sale_order)
+        self.assertTrue(rate["success"])
+        self.assertEqual(rate["carrier_price"], 20)
+        self.assertEqual(rate["price"], 0)
 
     def test_price_with_weight_volume_variable(self):
         """Test that the price is correctly computed when the variable is weight*volume."""
@@ -414,7 +464,7 @@ class TestDeliveryCost(DeliveryCommon):
         })
         delivery = self.env["delivery.carrier"].create({
             "name": "Delivery Charges",
-            "delivery_type": "base_on_rule",
+            "delivery_type": "in_house",
             "product_id": self.product_delivery_normal.id,
             "price_rule_ids": [
                 Command.create({
@@ -472,7 +522,7 @@ class TestDeliveryCost(DeliveryCommon):
         # create delivery
         delivery = self.env["delivery.carrier"].create({
             "name": "Delivery Charges",
-            "delivery_type": "fixed",
+            "delivery_type": "in_house",
             "product_id": delivery_product.id,
             "company_id": branch.id,
         })
@@ -521,7 +571,7 @@ class TestDeliveryCost(DeliveryCommon):
         })
         delivery = self.env["delivery.carrier"].create({
             "name": "Delivery Charges",
-            "delivery_type": "base_on_rule",
+            "delivery_type": "in_house",
             "product_id": product_test.id,
             "price_rule_ids": [
                 Command.create({
@@ -594,7 +644,7 @@ class TestDeliveryCost(DeliveryCommon):
             .with_company(nook_inc)
             .create({
                 "name": "Rule Delivery",
-                "delivery_type": "base_on_rule",
+                "delivery_type": "in_house",
                 "product_id": product_delivery_rule.id,
                 "price_rule_ids": [
                     Command.create({
@@ -605,7 +655,6 @@ class TestDeliveryCost(DeliveryCommon):
                         "list_base_price": 15,
                     })
                 ],
-                "fixed_margin": 10,
             })
         )
 
@@ -641,7 +690,7 @@ class TestDeliveryCost(DeliveryCommon):
         # check delivery price was properly converted
         delivery_sol = so.order_line[-1]
         self.assertEqual(delivery_sol.product_id, delivery.product_id)
-        self.assertEqual(delivery_sol.price_subtotal, 12.5)
+        self.assertEqual(delivery_sol.price_subtotal, 7.5)
 
     def test_base_on_rule_cost_for_combo_product(self):
         """
@@ -650,7 +699,7 @@ class TestDeliveryCost(DeliveryCommon):
         """
         delivery = self.env["delivery.carrier"].create({
             "name": "Delivery Charges",
-            "delivery_type": "base_on_rule",
+            "delivery_type": "in_house",
             "product_id": self.product_delivery_normal.id,
             "price_rule_ids": [
                 Command.create({

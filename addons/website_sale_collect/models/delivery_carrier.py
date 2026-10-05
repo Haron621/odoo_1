@@ -161,6 +161,12 @@ class DeliveryCarrier(models.Model):
             "warning_message": False,
         }
 
+    def _apply_margins(self, price, order=False):
+        """Override of `delivery` to ignore margins for in-store delivery methods."""
+        if self.delivery_type == "in_store":
+            return float(price)
+        return super()._apply_margins(price, order=order)
+
     def _get_pickup_locations(self, country=None, country_code=None, **kwargs):
         """Override of `website_sale` to include the selected country from the location selector.
 

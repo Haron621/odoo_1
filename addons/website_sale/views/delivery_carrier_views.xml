@@ -6,22 +6,24 @@
         <field name="model">delivery.carrier</field>
         <field name="inherit_id" ref="delivery.view_delivery_carrier_form"/>
         <field name="arch" type="xml">
-            <page name="description" position="after">
-                <page string="eCommerce" name="ecommerce">
-                    <group>
-                        <field
-                            name="website_id"
-                            placeholder="All websites"
-                            groups="website.group_multi_website"
-                            options="{'no_open': True, 'no_create_edit': True}"
-                        />
-                        <field
-                            name="enable_delivery_estimate"
-                            invisible="delivery_type not in ['fixed', 'base_on_rule']"
-                        />
-                    </group>
+            <group name="configuration_columns" position="attributes">
+                <attribute name="col">3</attribute>
+            </group>
+            <group name="description_details" position="after">
+                <group string="eCommerce" name="ecommerce_details">
+                    <field
+                        name="website_id"
+                        placeholder="All websites"
+                        groups="website.group_multi_website"
+                        options="{'no_open': True, 'no_create_edit': True}"
+                    />
+                    <field
+                        name="enable_delivery_estimate"
+                        invisible="delivery_type != 'in_house'"
+                    />
                     <div
                         name="estimated_delivery_fields"
+                        colspan="2"
                         invisible="not enable_delivery_estimate"
                         class="ms-4"
                     >
@@ -55,11 +57,8 @@
                             />
                         </div>
                     </div>
-                </page>
-            </page>
-            <field name="carrier_description" position="before">
-                <field name="website_description"  placeholder="Description displayed on the eCommerce and on online quotations."/>
-            </field>
+                </group>
+            </group>
             <button name="toggle_prod_environment" position="before">
                 <button name="website_publish_button" type="object" class="oe_stat_button" icon="public">
                     <field name="is_published" widget="website_publish_button"/>
