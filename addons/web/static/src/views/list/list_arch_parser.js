@@ -55,6 +55,40 @@ export class ListArchParser {
         };
     }
 
+    parseColumnTag(node, models, modelName, fieldNextIds, fieldNodes, parseId) {
+        const columnFields = [];
+        for (const child of node.children) {
+            if (child.tagName === "field") {
+                const fieldDescriptor = this.parseFieldNode(
+                    child,
+                    models,
+                    modelName,
+                    fieldNextIds,
+                    fieldNodes
+                );
+                columnFields.push({
+                    ...fieldDescriptor,
+                    id: `field_${this.nextId()}`,
+                    hasLabel: false,
+                });
+            }
+        }
+        const labelAttr = node.getAttribute("string");
+        const widthAttr = node.getAttribute("width");
+        const nameAttr = node.getAttribute("name");
+        return {
+            id: `column_${this.nextId()}`,
+            name: nameAttr || columnFields[0].name,
+            type: "column_group",
+            label: labelAttr !== null ? labelAttr : columnFields[0].label,
+            hasLabel: true,
+            optional: false,
+            column_invisible: node.getAttribute("column_invisible"),
+            fields: columnFields,
+            ...(widthAttr ? { attrs: { width: widthAttr } } : {}),
+        };
+    }
+
     parseWidgetNode(node, models, modelName) {
         return Widget.parseWidgetNode(node);
     }
@@ -81,6 +115,9 @@ export class ListArchParser {
         let handleField = null;
         const treeAttr = {};
         let nextId = 0;
+        if (!this.nextId) {
+            this.nextId = () => nextId++;
+        }
         const fieldNextIds = {};
         visitXML(xmlDoc, (node) => {
             if (node.tagName !== "button") {
@@ -156,37 +193,14 @@ export class ListArchParser {
                     type: "widget",
                 });
             } else if (node.tagName === "column") {
-                const columnFields = [];
-                for (const child of node.children) {
-                    if (child.tagName === "field") {
-                        const fieldDescriptor = this.parseFieldNode(
-                            child,
-                            models,
-                            modelName,
-                            fieldNextIds,
-                            fieldNodes
-                        );
-                        columnFields.push({
-                            ...fieldDescriptor,
-                            id: `field_${nextId++}`,
-                            hasLabel: false,
-                        });
-                    }
-                }
-                const labelAttr = node.getAttribute("string");
-                const widthAttr = node.getAttribute("width");
-                const nameAttr = node.getAttribute("name");
-                columns.push({
-                    id: `column_${nextId++}`,
-                    name: nameAttr || columnFields[0].name,
-                    type: "column_group",
-                    label: labelAttr !== null ? labelAttr : columnFields[0].label,
-                    hasLabel: true,
-                    optional: false,
-                    column_invisible: node.getAttribute("column_invisible"),
-                    fields: columnFields,
-                    ...(widthAttr ? { attrs: { width: widthAttr } } : {}),
-                });
+                const parsed = this.parseColumnTag(
+                    node,
+                    models,
+                    modelName,
+                    fieldNextIds,
+                    fieldNodes
+                );
+                columns.push(parsed);
                 return false;
             } else if (node.tagName === "groupby" && node.getAttribute("name")) {
                 const fieldName = node.getAttribute("name");

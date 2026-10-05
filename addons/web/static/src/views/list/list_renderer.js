@@ -29,6 +29,7 @@ import { useMagicColumnWidths } from "./column_width_hook";
 
 import {
     Component,
+    computed,
     onMounted,
     onPatched,
     onWillDestroy,
@@ -177,6 +178,8 @@ export class ListRenderer extends Component {
     debugOpenView = signal(false);
     editedRecord = signal(null);
     optionalActiveFields = proxy(this.props.optionalActiveFields || {});
+
+    columnGroups = computed(() => this._computeColumnGroups());
 
     debugMode = usePlugin(DebugModePlugin);
 
@@ -399,6 +402,27 @@ export class ListRenderer extends Component {
         onWillDestroy(() => {
             this.dialogClose.forEach((close) => close());
         });
+    }
+
+    _computeColumnGroups() {
+        return Object.fromEntries(
+            this.props.archInfo.columns
+                .filter((col) => col.type === "column_group")
+                .map((col) => {
+                    const elements = col.fields.map((fieldInfo) => ({
+                        id: fieldInfo.id,
+                        type: "field",
+                        fieldName: fieldInfo.name,
+                        fieldInfo,
+                        isVisible: (record) =>
+                            this.isColumnGroupFieldVisible(col, fieldInfo, record),
+                        classes: (record) => this.getColumnGroupFieldClasses(fieldInfo, record),
+                        formattedValue: (record) => this.getFormattedValue(fieldInfo, record),
+                        canUseFormatter: (record) => this.canUseFormatter(fieldInfo, record),
+                    }));
+                    return [col.id, { col, elements }];
+                })
+        );
     }
 
     displaySaveNotification() {
