@@ -113,11 +113,11 @@ export function changeOptionInPopover(blockName, optionName, elementName) {
         changeOption(blockName, `[data-label='${optionName}'] .dropdown-toggle`),
         {
             content: `Check if "${elementName}" option is shown. If not, search for it.`,
-            trigger: ".o_popover .o-dropdown-item",
-            async run({ waitFor, edit }) {
-                let item = await waitFor(itemSelector).catch(() => false);
+            trigger: ".o_popover .o-dropdown-item:not(.o_we_m2o_search_more)",
+            async run({ waitFor, queryFirst, edit }) {
+                let item = queryFirst(itemSelector);
                 if (!item) {
-                    const popoverInput = await waitFor(".o_popover input").catch(() => false);
+                    const popoverInput = queryFirst(".o_popover input");
                     if (popoverInput) {
                         await edit(elementName, ".o_popover input");
                     }
