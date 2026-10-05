@@ -35,7 +35,14 @@ import { EmbeddedComponentPlugin } from "../src/others/embedded_component_plugin
 import { setupEditor } from "./_helpers/editor";
 import { unformat } from "./_helpers/format";
 import { getContent, setSelection } from "./_helpers/selection";
-import { addStep, deleteBackward, deleteForward, redo, undo } from "./_helpers/user_actions";
+import {
+    addStep,
+    deleteBackward,
+    deleteForward,
+    pasteOdooEditorHtml,
+    redo,
+    undo,
+} from "./_helpers/user_actions";
 import { makeMockEnv, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { Deferred } from "@web/core/utils/concurrency";
 import { Plugin } from "@html_editor/plugin";
@@ -1785,5 +1792,29 @@ describe("Embedded state", () => {
         expect(getContent(el)).toBe(
             `<p>a[]<span data-embedded="counter" data-embedded-props='{"name":"customName","value":2}' data-oe-protected="true" contenteditable="false" data-embedded-state='{"stateChangeId":1,"previous":{"baseValue":3,"value":1},"next":{"baseValue":5,"value":2}}'><span class="counter">customName:5</span></span></p>`
         );
+    });
+});
+
+describe("Clipboard", () => {
+    test("paste of a supported embedded component host keeps the host", async () => {
+        const { editor } = await setupEditor(`<p>[]<br></p>`, {
+            config: getConfig([embedding("counter", Counter)]),
+        });
+
+        pasteOdooEditorHtml(editor, `<p><span data-embedded="counter"></span></p>`);
+        await animationFrame();
+
+        expect("[data-embedded='counter']").toHaveCount(1);
+    });
+
+    test("paste of an unsupported embedded component host removes the host", async () => {
+        const { editor } = await setupEditor(`<p>[]<br></p>`, {
+            config: getConfig([]),
+        });
+
+        pasteOdooEditorHtml(editor, `<p>before<span data-embedded="counter"></span>after</p>`);
+        await animationFrame();
+
+        expect("[data-embedded='counter']").toHaveCount(0);
     });
 });
