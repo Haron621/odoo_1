@@ -1,6 +1,10 @@
 import { Component, useProps, t, signal }  from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
+import { registry } from "@web/core/registry";
+import { _t } from "@web/core/l10n/translation";
+
+export const contactActionsRegistry = registry.category("website.team_board_snippet.modal_actions");
 
 export class SendMessageModal extends Component {
     static template = "website.s_team_board.send_message_modal"
@@ -11,48 +15,61 @@ export class SendMessageModal extends Component {
         role: t.string(),
         description: t.string(),
         photo: t.string(),
+        email: t.string().optional("mail.placeholder@mail.com"),
     });
 
-    isLoading = signal(false)
+    loadingActionId = signal(null);
+
+    get contactActions() {
+        return contactActionsRegistry
+            .getAll()
+            .sort((a, b) => (a.sequence || 100) - (b.sequence || 100));
+    }
 
     setup() {
         this.notification = useService("notification");
     }
 
-    async onSendMessage() {
-        if (this.isLoading()) return;
-
-        this.isLoading.set(true);
+    async handleActionClick(contactAction) {
+        if (this.loadingActionId()) return;
+        this.loadingActionId.set(contactAction.id);
         try {
-            await this.fakeApiCall();
-            this.notification.add("Your message has been sent", {
-                title: "Success",
-                type: "success",
-                sticky: false,
-            });
+            await contactAction.action({
+                    env: this.env,
+                    props: this.props,
+                    notification: this.notification,
+                });
             this.env.dialogData.close();
         } catch {
-            this.notification.add("Could not send your message", {
+        } finally {
+            this.loadingActionId.set(null);
+        }
+    }
+}
+
+contactActionsRegistry.add("send_message", {
+    id: "send_message",
+    label: "Send Message",
+    loadingLabel: "Sending...",
+    btnClass: "btn-primary",
+    sequence: 10,
+    action: async ({ notification }) => {
+        const shouldFail = Math.random() < 0.5;
+        try {
+            await new Promise((resolve, reject) => {
+                setTimeout(() => (shouldFail ? reject(new Error("Random error")) : resolve()), 1000);
+            });
+            notification.add(_t("Message sent!"), {
+                title: "Success",
+                type: "success",
+            });
+        } catch {
+            notification.add(_t("Could not send your message"), {
                 title: "Error",
                 type: "danger",
                 sticky: true,
             });
-        } finally {
-            this.isLoading.set(false);
+            throw new Error("unable to send message")
         }
-    }
-
-    async fakeApiCall(failureProbability = 0.5) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                const shouldFail = Math.random() < failureProbability;
-
-                if (shouldFail) {
-                    reject(new Error("Random error"));
-                } else {
-                    resolve({ success: true, data: "Random success" });
-                }
-            }, 2000);
-        });
-    }
-}
+    },
+});

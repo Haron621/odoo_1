@@ -15,15 +15,22 @@
                     </div>
                 </div>
 
+
                 <t t-set-slot="footer">
-                    <button class="btn btn-primary" t-on-click="this.onSendMessage" t-att-disabled="this.isLoading()">
-                        <t t-if="this.isLoading()">
-                            Sending...
-                        </t>
-                        <t t-else="">
-                            Send Message
-                        </t>
-                    </button>
+                    <t t-foreach="this.contactActions" t-as="contactAction" t-key="contactAction.id">
+                        <button 
+                            t-attf-class="btn #{contactAction.btnClass || 'btn-secondary'}" 
+                            t-on-click="() => this.handleActionClick(contactAction)" 
+                            t-att-disabled="!!this.loadingActionId()">
+                            
+                            <t t-if="this.loadingActionId() === contactAction.id">
+                                <t t-out="contactAction.loadingLabel || 'Processing...'"/>
+                            </t>
+                            <t t-else="">
+                                <t t-out="contactAction.label"/>
+                            </t>
+                        </button>
+                    </t>
                 </t>
             </Dialog> 
         </t>
