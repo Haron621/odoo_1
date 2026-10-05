@@ -29,10 +29,9 @@ class ResourceCalendarAttendance(models.Model):
             attendance.allowed_work_entry_type_ids = self.env['hr.work.entry.type'].search(domain)
 
     def _compute_display_name(self):
+        super()._compute_display_name()
         for attendance in self:
-            if not attendance.work_entry_type_id:
-                super()._compute_display_name()
-            else:
+            if attendance.work_entry_type_id:
                 duration = format_duration(attendance.duration_hours)
                 work_entry = attendance.work_entry_type_id.display_code or attendance.work_entry_type_id.display_name
                 if attendance.duration_based:
