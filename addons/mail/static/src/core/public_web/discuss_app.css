@@ -9,5 +9,5 @@
 
 
 .o-mail-DiscussApp-sidebarBgColor {
-    background-color: color-mix(in srgb, var(--gray-100), var(--white)) !important;
+    background-color: color-mix(in srgb, var(--gray-100), var(--o-white)) !important;
 }
