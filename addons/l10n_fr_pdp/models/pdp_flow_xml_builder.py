@@ -336,10 +336,23 @@ class PdpFlow10XMLBuilder(models.AbstractModel):
 
     @api.model
     def _invoice_add_referenced_documents(self, invoice, move):
-        invoice['ReferencedDocument'] = [{
+        referenced_documents = [{
             'ID': {'_text': ref_doc.name},
             'IssueDate': {'_text': self._format_date(ref_doc.date)}
         } for ref_doc in move._l10n_fr_pdp_get_referenced_documents()]
+        if move.move_type in ('out_refund', 'in_refund') and not move.reversed_entry_id:
+            reference_data = move._l10n_fr_pdp_get_credit_note_reference_data()
+            if reference_data['type'] == 'historical':
+                referenced_documents.append({
+                    'ID': {'_text': reference_data['reference']},
+                    'IssueDate': {'_text': self._format_date(reference_data['invoice_previous_date'])},
+                })
+            elif reference_data['type'] == 'global_discount':
+                referenced_documents.append({
+                    'ID': {'_text': reference_data['reference']},
+                    'IssueDate': {'_text': self._format_date(reference_data['period_start'])},
+                })
+        invoice['ReferencedDocument'] = referenced_documents
 
     @api.model
     def _invoice_add_partner_vals(self, invoice, partner, tag):

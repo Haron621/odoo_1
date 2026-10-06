@@ -22,6 +22,11 @@ PDP_TRACKED_FIELDS = {
     'l10n_fr_pdp_status',
 }
 
+STUDIO_CONTRACT_REFERENCE_FIELD = 'x_studio_peppol_contract_document_reference_id'
+STUDIO_INVOICE_PERIOD_START_FIELD = 'x_studio_peppol_invoice_period_start_date'
+STUDIO_INVOICE_PERIOD_END_FIELD = 'x_studio_peppol_invoice_period_end_date'
+STUDIO_INVOICE_PREVIOUS_DATE_FIELD = 'x_studio_peppol_invoice_previous_date'
+
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
@@ -565,6 +570,9 @@ class AccountMove(models.Model):
             return []
 
         def check():
+            if reference_error := self._l10n_fr_pdp_get_credit_note_reference_error():
+                yield reference_error
+
             if not self.company_id.partner_id._l10n_fr_pdp_get_siren():
                 yield _("The company SIREN is missing or invalid.")
 
@@ -638,6 +646,69 @@ class AccountMove(models.Model):
         if 'debit_origin_id' in self._fields:
             referenced += self.debit_origin_id
         return referenced
+
+    def _l10n_fr_pdp_get_studio_field_value(self, field_name, field_types):
+        self.ensure_one()
+        field = self._fields.get(field_name)
+        return self[field_name] if field and field.type in field_types else False
+
+    def _l10n_fr_pdp_set_studio_field_value(self, field_name, field_types, value):
+        self.ensure_one()
+        field = self._fields.get(field_name)
+        if value and field and field.type in field_types:
+            self[field_name] = value
+
+    def _l10n_fr_pdp_get_credit_note_reference_data(self):
+        self.ensure_one()
+        reference = self._l10n_fr_pdp_get_studio_field_value(
+            STUDIO_CONTRACT_REFERENCE_FIELD,
+            {'char', 'text'},
+        )
+        invoice_previous_date = self._l10n_fr_pdp_get_studio_field_value(
+            STUDIO_INVOICE_PREVIOUS_DATE_FIELD,
+            {'date'},
+        )
+        period_start = self._l10n_fr_pdp_get_studio_field_value(
+            STUDIO_INVOICE_PERIOD_START_FIELD,
+            {'date'},
+        )
+        period_end = self._l10n_fr_pdp_get_studio_field_value(
+            STUDIO_INVOICE_PERIOD_END_FIELD,
+            {'date'},
+        )
+
+        if reference and invoice_previous_date and not period_start and not period_end:
+            reference_type = 'historical'
+        elif reference and period_start and period_end and not invoice_previous_date:
+            reference_type = 'global_discount'
+        else:
+            reference_type = 'invalid'
+
+        return {
+            'type': reference_type,
+            'reference': reference,
+            'invoice_previous_date': invoice_previous_date,
+            'period_start': period_start,
+            'period_end': period_end,
+        }
+
+    def _l10n_fr_pdp_get_credit_note_reference_error(self):
+        self.ensure_one()
+        if (
+            self.move_type not in ('out_refund', 'in_refund')
+            or self.reversed_entry_id
+            or self._l10n_fr_pdp_get_credit_note_reference_data()['type'] != 'invalid'
+        ):
+            return False
+        return _(
+            "A standalone credit note must use Studio field %(reference_field)s with either "
+            "%(previous_date_field)s for a historical invoice, or %(period_start_field)s and "
+            "%(period_end_field)s for a global discount.",
+            reference_field=STUDIO_CONTRACT_REFERENCE_FIELD,
+            previous_date_field=STUDIO_INVOICE_PREVIOUS_DATE_FIELD,
+            period_start_field=STUDIO_INVOICE_PERIOD_START_FIELD,
+            period_end_field=STUDIO_INVOICE_PERIOD_END_FIELD,
+        )
 
     def _l10n_fr_pdp_get_transaction_type(self):
         """Classify invoice for PDP reporting: b2c, b2bi, or False (domestic B2B)."""
