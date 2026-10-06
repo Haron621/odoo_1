@@ -213,6 +213,11 @@ export class SocialMediaOptionPlugin extends Plugin {
 
             for (const el of elements) {
                 el.setAttribute("href", link);
+                const info = this.getAssociatedSocialMedia(link);
+                el.setAttribute(
+                    "title",
+                    info.media ? link.replace(/^https?:\/\//, "").replace(/^www\./, "") : link
+                );
             }
         }
         return true;
@@ -285,6 +290,7 @@ export class SocialMediaOptionPlugin extends Plugin {
         }
         el.href = "https://www.example.com";
         el.setAttribute("aria-label", "example");
+        el.setAttribute("title", "https://www.example.com");
         return el;
     }
 
@@ -382,6 +388,15 @@ export class EditSocialMediaLinkAction extends BuilderAction {
         const info = this.dependencies.socialMediaOptionPlugin.getAssociatedSocialMedia(value);
         const ariaLabel = info.media?.label || info.name || defaultAriaLabel;
         editingElement.setAttribute("aria-label", ariaLabel);
+        editingElement.setAttribute(
+            "title",
+            info.media
+                ? editingElement
+                      .getAttribute("href")
+                      ?.replace(/^https?:\/\//, "")
+                      ?.replace(/^www\./, "")
+                : editingElement.getAttribute("href")
+        );
 
         this.dependencies.socialMediaOptionPlugin.removeSocialMediaClasses(editingElement);
         let iconDataIcon;
