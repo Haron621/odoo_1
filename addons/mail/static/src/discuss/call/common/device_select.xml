@@ -2,10 +2,26 @@
 <templates xml:space="preserve">
 
     <t t-name="discuss.CallDeviceSelect">
+<<<<<<< d0d6ed3ded92a70253eec0b9db106e74a9836169
         <Dropdown
             onStateChanged.bind="openSelect"
             disabled="!isPermissionGranted(props.kind)"
             openOnMouseEnter="false"
+||||||| 4e7b84db9455086754164db5e404987c34d48eb7
+        <select
+            t-if="!isPermissionGranted(props.kind)"
+            name="inputDevice"
+            class="form-select d-flex shadow-sm"
+            t-on-pointerdown.prevent="() => this.showPermissionDialog(props.kind)"
+            t-on-keydown.prevent="() => this.showPermissionDialog(props.kind)"
+=======
+        <select
+            t-if="!isPermissionGranted(props.kind)"
+            name="inputDevice"
+            class="form-select d-flex shadow-sm"
+            t-on-pointerdown.prevent="() => this.showPermissionDialog(props.kind)"
+            t-on-keydown="this.handlePermissionKeydown"
+>>>>>>> 202ba0cde6744ce3d625b194ee46bb029bd79583
         >
             <button
                 t-if="isPermissionGranted(props.kind)"
