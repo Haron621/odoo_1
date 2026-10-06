@@ -41,7 +41,7 @@ class AccountSecureEntriesWizard(models.TransientModel):
     unreconciled_bank_statement_line_ids = fields.Many2many(
         compute='_compute_data',
         comodel_name='account.bank.statement.line',
-        help="All unreconciled bank statement lines before the selected date.",
+        help="All unreconciled bank transactions before the selected date.",
     )
     not_hashable_unlocked_move_ids = fields.Many2many(
         compute='_compute_data',
@@ -153,7 +153,7 @@ class AccountSecureEntriesWizard(models.TransientModel):
             if wizard.unreconciled_bank_statement_line_ids:
                 ignored_sequence_prefixes = list(set(wizard.unreconciled_bank_statement_line_ids.move_id.mapped('sequence_prefix')))
                 warnings['account_unreconciled_bank_statement_line_ids'] = {
-                    'message': _("There are still unreconciled bank statement lines before the selected date. "
+                    'message': _("There are still unreconciled bank transactions before the selected date. "
                                  "The entries from journal prefixes containing them will not be secured: %(prefix_info)s",
                                  prefix_info=ignored_sequence_prefixes),
                     'level': 'danger',
