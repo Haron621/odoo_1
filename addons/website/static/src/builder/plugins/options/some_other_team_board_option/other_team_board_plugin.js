@@ -20,7 +20,7 @@ export class AnotherTeamBoardPlugin extends Plugin {
         }
         return [
             {
-                class: "oe_snippet_prioritize text-warning fa fa-star",
+                class: "oe_snippet_prioritize text-warning",
                 icon: "star",
                 title: _t("Prioritize"),
                 handler: () => {

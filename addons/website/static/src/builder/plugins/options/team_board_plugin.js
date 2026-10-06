@@ -2,6 +2,8 @@ import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { BuilderAction } from "@html_builder/core/builder_action";
+import { withSequence } from "@html_editor/utils/resource";
+import { renderToElement } from "@web/core/utils/render";
 
 export class TeamBoardAlphabeticSortAction extends BuilderAction {
   static id = "TeamBoardAlphabeticSort";
@@ -45,7 +47,11 @@ export class TeamBoardPlugin extends Plugin {
         builder_actions: {
             TeamBoardAlphabeticSortAction,
             TeamBoardAddMemberAction,
-        }
+        },
+        options_container_top_buttons_providers: withSequence(
+            20,
+            this.getOptionsContainerTopButtons.bind(this)
+        ),
     }
 
     isLastTimelineItem(el) {
@@ -55,6 +61,28 @@ export class TeamBoardPlugin extends Plugin {
         }
         const cards = Array.from(container.querySelectorAll(".o_team_board_card"));
         return cards.length <= 1;
+    }
+
+    addMemberCard(el){
+        console.log("I HAVE BEEN CALLED GREAT NEWS YEEEE", el);
+        let row = el.querySelector(' .container .row');
+        const newMember = renderToElement("website.team_board.member_card", {});
+        row.appendChild(newMember);
+        newMember.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    }
+
+    getOptionsContainerTopButtons(el) {
+        if (!el.classList.contains("s_team_board")) {
+            return [];
+        }
+        return [
+            {
+                class: "oi oi-fw o_we_hover_warning btn o-hb-btn btn-global-color-hover",
+                icon: "add",
+                title: _t("Add a new card memeber!"),
+                handler: this.addMemberCard.bind(this),
+            },
+        ];
     }
 }
 
