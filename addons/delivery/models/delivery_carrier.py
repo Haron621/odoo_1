@@ -312,7 +312,15 @@ class DeliveryCarrier(models.Model):
 
     def _match_weight(self, source):
         self.ensure_one()
+<<<<<<< d6d4ad80593e00f1cd18306e61c23a8d7efb09fc
         if source._name == "sale.order":
+||||||| fd328e07e536e686f4e60a7dcc5812dfb40db763
+        if source._name == 'sale.order':
+=======
+        if not self.max_weight:
+            return True
+        if source._name == 'sale.order':
+>>>>>>> 29a4cfa8c6e4f2136f66049a687049bfbf92fcdf
             total_weight = sum(
                 line.product_id.weight * line.product_qty for line in source.order_line
             )
@@ -322,11 +330,19 @@ class DeliveryCarrier(models.Model):
             )
         else:
             raise UserError(_("Invalid source document type"))
-        return not self.max_weight or total_weight <= self.max_weight
+        return total_weight <= self.max_weight
 
     def _match_volume(self, source):
         self.ensure_one()
+<<<<<<< d6d4ad80593e00f1cd18306e61c23a8d7efb09fc
         if source._name == "sale.order":
+||||||| fd328e07e536e686f4e60a7dcc5812dfb40db763
+        if source._name == 'sale.order':
+=======
+        if not self.max_volume:
+            return True
+        if source._name == 'sale.order':
+>>>>>>> 29a4cfa8c6e4f2136f66049a687049bfbf92fcdf
             total_volume = sum(
                 line.product_id.volume * line.product_qty for line in source.order_line
             )
@@ -336,7 +352,7 @@ class DeliveryCarrier(models.Model):
             )
         else:
             raise UserError(_("Invalid source document type"))
-        return not self.max_volume or total_volume <= self.max_volume
+        return total_volume <= self.max_volume
 
     @api.onchange("integration_level")
     def _onchange_integration_level(self):
