@@ -19,7 +19,7 @@ class CommonPosTest(AccountTestInvoicingCommon):
 
         # Currencies - USD, EUR
         cls.company_currency = cls.company.currency_id
-        cls.other_currency = cls.setup_other_currency('EUR', rounding=0.001)
+        cls.other_currency = cls.setup_other_currency('EUR', rates=[('2000-01-01', 0.5)], rounding=0.001)
 
         cls._setup_account_journals()
         cls._setup_payment_methods()
@@ -168,6 +168,7 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'receivable_account_id': cls.company_data['default_account_receivable'].id,
             'type': 'pay_later',
         })
+        # TODO-PARP: Remove these alias
         cls.cash_payment_method = cls.cash_pm
         cls.bank_payment_method = cls.bank_pm
 
@@ -211,15 +212,6 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'payment_method_ids': [(6, 0, cls.bank_pm2.ids)],
         })
 
-    # TODO-PARP: Move remaining TestPoSCommon helpers here.
-    #
-    # Payments/accounting:
-    # - _run_test()
-    # - _check_invoice_journal_entries()
-    # - _check_session_journal_entries()
-    # - _find_then_assert_values()
-    # - _assert_account_move()
-
     @classmethod
     def create_product_template(cls, name, list_price, pos_categ_ids=[], tax_ids=[], **kwargs):
         return cls.env['product.template'].create({
@@ -248,76 +240,94 @@ class CommonPosTest(AccountTestInvoicingCommon):
             product.property_account_income_id = sale_account
         return product
 
-    def open_new_session(self, opening_cash=0):
+    def open_new_session(self, opening_cash=0, config=None):
         """ Used to open new pos session in each configuration.
+        The configuration defaults to self.pos_config_usd.
         - The idea is to properly set values that are constant
           and commonly used in an open pos session.
         Fields:
-            * config : the pos.config currently being used.
-                Its value is set at `self.setUp` of the inheriting
-                test class.
+            * config : the pos.config passed to this helper.
             * pos_session : the current_session_id of config
             * currency : currency of the current pos.session
             * pricelist : the default pricelist of the session
         """
-        self.config.open_ui()
-        self.pos_session = self.config.current_session_id
+        config = config or self.pos_config_usd
+        config.open_ui()
+        self.pos_session = config.current_session_id
         self.currency = self.pos_session.currency_id
         self.pricelist = self.pos_session.config_id.pricelist_id
         self.pos_session.set_opening_control(opening_cash, None)
         return self.pos_session
 
+    def close_pos_session(self, config=None, amount=None):
+        config = config or self.pos_config_usd
+        session = config.current_session_id
+        closing_data = session.get_closing_control_data()
+        cash_details = closing_data['default_cash_details']
+        session.close_session_from_ui({
+            cash_details['id']: cash_details['payment_amount'] if amount is None else amount,
+        } if cash_details else {})
+        self.assertEqual(session.state, 'closed')
+        return session
+
     def _create_ui_order_data(self, lines, payments=None, customer=False, config=False, **kwargs):
         config = config or self.pos_config_usd
         if not config.current_session_id:
             config.open_ui()
-        fiscal_position = customer.property_account_position_id if customer else config.default_fiscal_position_id
+        fiscal_position = (
+            self.env['account.fiscal.position'].browse(kwargs['fiscal_position_id'])
+            if 'fiscal_position_id' in kwargs
+            else customer.property_account_position_id if customer else config.default_fiscal_position_id
+        )
 
-        def _create_order_line(product, quantity=1.0, discount=0.0, line_kwargs=None):
-            line_kwargs = line_kwargs or {}
+        def _create_order_line(product, quantity=1.0, discount=0.0, line_kwargs={}):
             price_unit = line_kwargs.get('price_unit', config.pricelist_id._get_product_price(product, quantity))
             tax_ids = fiscal_position.map_tax(product.taxes_id.filtered_domain(self.env['account.tax']._check_company_domain(self.env.company)))
             price_unit_after_discount = price_unit * (1 - discount / 100.0)
             tax_values = (
-                tax_ids.compute_all(price_unit_after_discount, self.currency, quantity)
+                tax_ids.compute_all(price_unit_after_discount, config.currency_id, quantity)
                 if tax_ids
                 else {
                     'total_excluded': price_unit_after_discount * quantity,
                     'total_included': price_unit_after_discount * quantity,
                 }
             )
-            return Command.create({
+            return list(Command.create({
                 'price_unit': price_unit,
                 'product_id': product.id,
                 'full_product_name': product.name,
                 'price_subtotal': abs(tax_values['total_excluded']),  # Must never be negative, qty is used to determine the sign of the amounts
                 'price_subtotal_incl': abs(tax_values['total_included']),  # Must never be negative, qty is used to determine the sign of the amounts
                 'qty': quantity,
+                'discount': discount,
                 'tax_ids': [(6, 0, tax_ids.ids)],
+                'uuid': str(uuid4()),
                 **line_kwargs,
-            })
+            }))
 
-        order_lines = list(starmap(_create_order_line, lines))
+        order_lines = [list(command) for command in starmap(_create_order_line, lines)]
 
         # 2. generate the payments
-        if payments is None:
+        if payments is None and kwargs.get('state', 'paid') != 'draft':
             def _get_line_amount_incl(line):
                 vals = line[2]
                 qty, price_unit = vals.get('qty', 1.0), vals.get('price_unit', 1.0)
                 amount = vals.get('price_subtotal_incl', abs(price_unit * qty))
                 return amount * (-1 if (price_unit < 0) ^ (qty < 0) else 1)
 
-            total_amount_incl = self.currency.round(sum(_get_line_amount_incl(line) for line in order_lines))
+            total_amount_incl = config.currency_id.round(sum(_get_line_amount_incl(line) for line in order_lines))
             payments = [[config.payment_method_ids[0], total_amount_incl]]
 
-        def _create_payment(payment_method, amount):
-            return Command.create({
+        def _create_payment(payment_method, amount, payment_kwargs=None):
+            return list(Command.create({
                 'amount': amount,
                 'payment_method_id': payment_method.id,
-            })
+                'uuid': str(uuid4()),
+                **(payment_kwargs or {}),
+            }))
 
         # 3. complete the fields of the order_data
-        order_uuid = uuid4()
+        order_uuid = str(uuid4())
         return {
             'amount_paid': 0.0,  # calculation is done via _compute_prices
             'amount_total': 0.0,
@@ -331,7 +341,7 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'partner_id': customer and customer.id,
             'session_id': config.current_session_id.id,
             'company_id': config.company_id.id,
-            'payment_ids': list(starmap(_create_payment, payments)),
+            'payment_ids': list(starmap(_create_payment, payments or [])),
             'uuid': order_uuid,
             'user_id': self.env.uid,
             **kwargs,
@@ -467,6 +477,15 @@ class TestPoSCommon(CommonPosTest):
         super().setUpClass()
         cls.basic_config = cls.pos_config_usd
         cls.other_currency_config = cls.pos_config_eur
+
+    # TODO-PARP: Move remaining TestPoSCommon helpers here.
+    #
+    # Payments/accounting:
+    # - _run_test()
+    # - _check_invoice_journal_entries()
+    # - _check_session_journal_entries()
+    # - _find_then_assert_values()
+    # - _assert_account_move()
 
     def create_ui_order_data(self, pos_order_lines_ui_args, pos_order_ui_args={}, customer=False, is_invoiced=False, payments=None, uuid=None):
         if is_invoiced:

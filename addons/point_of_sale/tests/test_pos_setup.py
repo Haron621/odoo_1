@@ -2,38 +2,38 @@
 
 import odoo
 from odoo.exceptions import ValidationError
-from odoo.addons.point_of_sale.tests.common import TestPoSCommon
+from odoo.addons.point_of_sale.tests.common import CommonPosTest
 
 
 # TODO-PARP: Move tests and remove File
 
 @odoo.tests.tagged('post_install', '-at_install')
-class TestPoSSetup(TestPoSCommon):
+class TestPoSSetup(CommonPosTest):
     """ This group of tests is for sanity check in setting up global records which will be used
     in each testing.
 
     If a test fails here, then it means there are inconsistencies in what we expect in the setup.
     """
-    _test_user_groups = None  # FIXME list needed groups
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
-    def setUp(self):
-        super(TestPoSSetup, self).setUp()
-
-        self.config = self.basic_config
-        self.products = [
-            self.create_product('Product 1', self.categ_basic, lst_price=10.0, standard_price=5),
-            self.create_product('Product 2', self.categ_basic, lst_price=20.0, standard_price=10),
-            self.create_product('Product 3', self.categ_basic, lst_price=30.0, standard_price=15),
+        cls.config = cls.pos_config_usd
+        cls.products = [
+            cls.create_product('Product 1', cls.categ_basic, lst_price=10.0, standard_price=5),
+            cls.create_product('Product 2', cls.categ_basic, lst_price=20.0, standard_price=10),
+            cls.create_product('Product 3', cls.categ_basic, lst_price=30.0, standard_price=15),
         ]
 
     def test_basic_config_values(self):
 
-        config = self.basic_config
+        config = self.pos_config_usd
         self.assertEqual(config.currency_id, self.company_currency)
-        self.assertEqual(config.pricelist_id.currency_id, self.company_currency)
+        self.assertFalse(config.use_pricelist)
+        self.assertFalse(config.pricelist_id)
 
     def test_other_currency_config_values(self):
-        config = self.other_currency_config
+        config = self.pos_config_eur
         self.assertEqual(config.currency_id, self.other_currency)
         self.assertEqual(config.pricelist_id.currency_id, self.other_currency)
 
@@ -43,29 +43,27 @@ class TestPoSSetup(TestPoSCommon):
 
 
         # check usd pricelist
-        pricelist = self.basic_config.pricelist_id
+        pricelist = self.pos_config_usd.pricelist_id
         for product in self.products:
             self.assertAlmostEqual(get_price(pricelist, product), product.lst_price)
 
         # check eur pricelist
         # exchange rate to the other currency is set to 0.5, thus, lst_price
         # is expected to have half its original value.
-        pricelist = self.other_currency_config.pricelist_id
+        pricelist = self.pos_config_eur.pricelist_id
         for product in self.products:
             self.assertAlmostEqual(get_price(pricelist, product), product.lst_price * 0.5)
 
     def test_taxes(self):
         tax7 = self.taxes['tax7']
-        self.assertEqual(tax7.name, 'Tax 7%')
         self.assertAlmostEqual(tax7.amount, 7)
-        self.assertEqual(tax7.invoice_repartition_line_ids.mapped('account_id').id, self.tax_received_account.id)
+        self.assertFalse(tax7.price_include)
         tax10 = self.taxes['tax10']
-        self.assertEqual(tax10.name, 'Tax 10%')
         self.assertAlmostEqual(tax10.amount, 10)
-        self.assertEqual(tax10.price_include, True)
-        self.assertEqual(tax10.invoice_repartition_line_ids.mapped('account_id').id, self.tax_received_account.id)
+        self.assertFalse(tax10.price_include)
+        self.assertTrue(self.taxes['tax10_incl'].price_include)
+        self.assertEqual(self.taxes['tax10_incl'].amount, 10)
         tax_group_7_10 = self.taxes['tax_group_7_10']
-        self.assertEqual(tax_group_7_10.name, 'Tax 7+10%')
         self.assertEqual(tax_group_7_10.amount_type, 'group')
         self.assertEqual(sorted(tax_group_7_10.children_tax_ids.ids), sorted((tax7 | tax10).ids))
 
@@ -80,43 +78,19 @@ class TestPoSSetup(TestPoSCommon):
         })
         payment_method = self.env['pos.payment.method'].create({
             'name': 'Lets Pay for Tests', 'journal_id': journal.id, 'type': 'bank'})
-        self.basic_config.write({'payment_method_ids': [payment_method.id]})
-        journal.write({'pos_payment_method_ids': [payment_method.id]})
-        session = self.env['pos.session'].create(
-            {
-                'name': 'lets sell some tests',
-                'config_id': self.basic_config.id,
-                'user_id': self.env.user.id,
-                'state': 'opened'
-            }
-        )
-        order = self.env['pos.order'].create(
-            {
-                'name': 'MIX',
-                'amount_tax': 0,
-                'amount_total': 0,
-                'amount_paid': 0,
-                'amount_return': 0,
-                'company_id': self.company.id,
-                'pricelist_id': self.currency_pricelist.id,
-                'session_id': session.id
-            }
-        )
-        self.env['pos.payment'].create(
-            {
-                'amount': 100,
-                'payment_date': '2025-01-01',
-                'payment_method_id': payment_method.id,
-                'pos_order_id': order.id
-            }
+        self.pos_config_usd.write({'payment_method_ids': [odoo.Command.set(payment_method.ids)]})
+        self.open_new_session()
+        self.create_pos_order(
+            [[self.products[0], 10]],
+            payments=[[payment_method, 100]],
         )
         with self.assertRaises(ValidationError):
             journal.action_archive()
 
     def test_card_payment_method_initialization(self):
         """Test that the 'Card' payment method created by default has an outstanding account."""
-        card_pm = self.env['pos.payment.method'].search([
-            ('name', '=', 'Card'), ('company_id', '=', self.env.company.id),
-        ], limit=1)
+        self.bank_pm.active = False
+        _, payment_method_ids = self.pos_config_usd._create_journal_and_payment_methods()
+        card_pm = self.env['pos.payment.method'].browse(payment_method_ids).filtered(lambda pm: pm.name == 'Card')
         self.assertTrue(card_pm)
         self.assertTrue(card_pm.outstanding_account_id)

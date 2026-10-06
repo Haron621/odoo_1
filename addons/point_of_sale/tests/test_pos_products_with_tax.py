@@ -3,7 +3,7 @@
 from odoo import Command
 
 import odoo
-from odoo.addons.point_of_sale.tests.common import TestPoSCommon
+from odoo.addons.point_of_sale.tests.common import CommonPosTest
 from odoo.tests import Form
 from odoo.exceptions import UserError
 
@@ -11,42 +11,34 @@ from odoo.exceptions import UserError
 
 
 @odoo.tests.tagged('post_install', '-at_install')
-class TestPoSProductsWithTax(TestPoSCommon):
+class TestPoSProductsWithTax(CommonPosTest):
     """ Test normal configuration PoS selling products with tax
     """
-    _test_user_groups = None  # FIXME list needed groups
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
-    def setUp(self):
-        super(TestPoSProductsWithTax, self).setUp()
-
-        self.config = self.basic_config
-        self.product1 = self.create_product(
+        cls.config = cls.pos_config_usd
+        cls.product1 = cls.create_product(
             'Product 1',
-            self.categ_basic,
+            cls.categ_basic,
             10.0,
             5.0,
-            tax_ids=self.taxes['tax7'].ids,
+            tax_ids=cls.taxes['tax7'].ids,
         )
-        self.product2 = self.create_product(
+        cls.product2 = cls.create_product(
             'Product 2',
-            self.categ_basic,
+            cls.categ_basic,
             20.0,
             10.0,
-            tax_ids=self.taxes['tax10'].ids,
+            tax_ids=cls.taxes['tax10'].ids,
         )
-        self.product3 = self.create_product(
+        cls.product3 = cls.create_product(
             'Product 3',
-            self.categ_basic,
+            cls.categ_basic,
             30.0,
             15.0,
-            tax_ids=self.taxes['tax_group_7_10'].ids,
-        )
-        # TODO-PARP: Remove (No use)
-        self.product4 = self.create_product(
-            'Product 4',
-            self.categ_basic,
-            54.99,
-            tax_ids=[self.taxes['tax_fixed006'].id, self.taxes['tax_fixed012'].id, self.taxes['tax21'].id],
+            tax_ids=cls.taxes['tax_group_7_10'].ids,
         )
 
     def test_pos_loaded_product_taxes_on_branch(self):
@@ -156,7 +148,7 @@ class TestPoSProductsWithTax(TestPoSCommon):
             odoo.Command.set(xx_cash_payment_method.ids),
         ]})
         self.config = xx_config
-        pos_session = self.open_new_session()
+        pos_session = self.open_new_session(config=self.config)
         # load the session data from Branch XX:
         # - Product all taxes           => tax from Branch XX should be set
         # - Product no tax from XX      => tax from Branch X should be set
