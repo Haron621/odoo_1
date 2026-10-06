@@ -1,4 +1,4 @@
-import { browser } from "@web/core/browser/browser";
+import { location } from "@web/core/browser/browser";
 import { registry } from "@web/core/registry";
 import { redirect } from "@web/core/utils/urls";
 import { Interaction } from "@web/public/interaction";
@@ -33,7 +33,7 @@ export class WebsiteFilters extends Interaction {
 
     onPopState(ev) {
         if (this.hasPushedState) {
-            this.applyFilters(ev.state?.filterUrl || browser.location.href);
+            this.applyFilters(ev.state?.filterUrl || location.href);
         }
     }
 
@@ -43,7 +43,7 @@ export class WebsiteFilters extends Interaction {
 
         let newDocument;
         try {
-            const response = await this.waitFor(browser.fetch(url));
+            const response = await this.waitFor(fetch(url));
             if (!response.ok) {
                 throw new Error(response.statusText);
             }
@@ -70,9 +70,9 @@ export class WebsiteFilters extends Interaction {
             currentEl.replaceChildren(...newEl.childNodes);
         }
 
-        const displayedUrl = new URL(url, browser.location.href);
-        displayedUrl.searchParams.delete("pinned_tag");
-        if (displayedUrl.href !== browser.location.href) {
+        const displayedUrl = new URL(url, location.href);
+        // displayedUrl.searchParams.delete("pinned_section_id");
+        if (displayedUrl.href !== location.href) {
             history.pushState({ filterUrl: url }, "", displayedUrl.href);
             this.hasPushedState = true;
         }

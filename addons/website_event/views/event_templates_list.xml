@@ -67,7 +67,7 @@
                         </span>
                         <t t-foreach="category.tag_ids" t-as="tag">
                             <span t-if="tag.color"
-                                t-att-data-post="keep_event_url(tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_tag=tag.id, prevent_redirect=True)"
+                                t-att-data-post="keep_event_url(tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_section_id=tag.category_id.id, prevent_redirect=True)"
                                 t-attf-class="post_link cursor-pointer dropdown-item d-flex align-items-center justify-content-between #{'active' if tag in search_tags else ''}">
                                 <t t-out="tag.name"/>
                             </span>
@@ -103,7 +103,7 @@
             count="search_count">
             <div class="accordion accordion-flush">
                 <t t-foreach="categories" t-as="category">
-                    <t t-set="category_tags" t-value="category.tag_ids.filtered(lambda tag: tag.color and (tag in available_tags_by_category[category.id] or tag in search_tags))"/>
+                    <t t-set="category_tags" t-value="available_tags_by_category[category.id]"/>
                     <t t-if="category_tags"
                         t-call="website.filters_section"
                         section_id="'o_wevent_offcanvas_cat_%s' % category.id"
@@ -115,7 +115,7 @@
                             option_id="'o_wevent_offcanvas_tag_%s' % tag.id"
                             label="tag.name"
                             checked="tag in search_tags"
-                            option_url="keep_event_url('/event', tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_tag=tag.id, prevent_redirect=True)"/>
+                            option_url="keep_event_url('/event', tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_section_id=tag.category_id.id, prevent_redirect=True)"/>
                     </t>
                 </t>
             </div>
@@ -128,7 +128,7 @@
         <t t-foreach="search_tags" t-as="tag">
             <span t-attf-class="o_filter_tag d-inline-flex align-items-baseline rounded ps-2 #{'o_color_%s' % tag.color if tag.color else ''}">
                 <t t-out="tag.display_name"/>
-                <span t-att-data-post="keep_event_url(tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_tag=tag.id, prevent_redirect=True)"
+                <span t-att-data-post="keep_event_url(tags=slugify_tags(search_tags.ids, toggle_tag_id=tag.id), pinned_section_id=tag.category_id.id, prevent_redirect=True)"
                     class="post_link cursor-pointer btn border-0 py-1 px-2 text-reset opacity-75-hover">
                     <i class="oi" data-icon="close_small" role="img"/>
                 </span>
@@ -147,8 +147,8 @@
             </button>
             <div class="dropdown-menu">
                 <t t-foreach="dates" t-as="date">
-                    <t t-set="is_active" t-value="searches.get('date') == date[0]"/>
-                    <t t-if="date[3] or is_active or date[0] == 'all'">
+                    <t t-if="date[3] or (date[0] in ('old','upcoming','all'))">
+                        <t t-set="is_active" t-value="searches.get('date') == date[0]"/>
                         <a t-att-href="keep_event_url('/event', date=date[0])" t-attf-class="dropdown-item d-flex align-items-center justify-content-between #{is_active and 'active'}">
                             <t t-out="date[1]"/>
                             <span t-if="date[3]" t-out="date[3]" t-attf-class="badge pagination ms-3 text-bg-primary"/>
@@ -164,7 +164,7 @@
             title.translate="Date">
             <t t-foreach="dates" t-as="date">
                 <t t-set="is_active" t-value="searches.get('date') == date[0]"/>
-                <t t-if="date[3] or is_active or date[0] == 'all'"
+                <t t-if="date[3] or date[0] == 'all'"
                     t-call="website.filters_option"
                     group_name="'date'"
                     option_id="'o_wevent_offcanvas_date_%s' % date[0]"

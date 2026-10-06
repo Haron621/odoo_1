@@ -715,7 +715,7 @@
         t-call="website.filters_offcanvas"
         offcanvas_id="offcanvas_id"
         refresh_selectors="'.o_jobs_topbar_search_bar,#jobs_grid,#%s' % offcanvas_id"
-        has_active_filters="has_active_filters"
+        has_active_filters="opt_jobs_is_filter_applied"
         clear_url="'/jobs?%s' % keep_query('search') if search else '/jobs'"
         count="search_count">
         <div class="accordion accordion-flush"/>
@@ -951,7 +951,7 @@
     priority="50">
     <xpath expr="//t[@t-set='opt_jobs_is_filter_applied']" position="after">
         <a t-if="opt_jobs_is_filter_applied and opt_jobs_filter_count &gt; 1"
-            t-attf-href="/jobs#{('?' + keep_query('search')) if search else ''}"
+            t-attf-href="/jobs#{('?search=' + search) if search else ''}"
             class="d-none d-lg-block btn btn-link"
             role="button"
             type="button">
@@ -962,7 +962,7 @@
 
 <!-- Search Bar -->
 <template id="job_search_bar" inherit_id="website_hr_recruitment.topbar_customizations" active="True">
-    <xpath expr="//div[hasclass('o_jobs_topbar_search_bar')]/*" position="before">
+    <xpath expr="//t[@t-call='website.filters_toggler']" position="before">
         <t t-call="website.website_search_box_input"
             _form_classes.f="flex-grow-1"
             search_type.f="jobs">

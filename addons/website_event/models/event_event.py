@@ -606,7 +606,7 @@ class EventEvent(models.Model):
             # ("age: 10-12" OR "age: 12-15") AND "activity: football
             for category, category_tags in search_tags.grouped('category_id').items():
                 tag_domains[category.id] = [('tag_ids', 'in', category_tags.ids)]
-            domain += tag_domains.values()
+            domain.extend(tag_domains.values())
 
         no_country_domain = domain.copy()
         include_online_events = (

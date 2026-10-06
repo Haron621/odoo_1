@@ -117,7 +117,10 @@ class WebsiteEventController(http.Controller):
             return request.redirect('/event')
 
         # count by domains without self search
-        domain_search = Domain('name', 'ilike', fuzzy_search_term or searches['search']) if searches['search'] else Domain.TRUE
+        domain_search = Domain.OR(
+            Domain(field, 'ilike', fuzzy_search_term or searches['search'])
+            for field in event_details['search_fields']
+        ) if searches['search'] else Domain.TRUE
 
         categories = request.env['event.tag.category'].search(
             Domain('is_published', '=', True) & self.env.website.website_domain())
@@ -127,15 +130,14 @@ class WebsiteEventController(http.Controller):
             grouped_tags = Event._read_group(Domain.AND(tag_domain) & domain_search, ['tag_ids'])
             return request.env['event.tag'].union(tag for [tag] in grouped_tags if tag)
 
-        available_tags_by_category = dict.fromkeys(categories.ids, available_tags(event_details['base_domain'])) | {
+        reachable_tags_by_category = dict.fromkeys(categories.ids, available_tags(event_details['base_domain'])) | {
             category_id: available_tags(tag_domain) for category_id, tag_domain in event_details['no_tag_domains'].items()
         }
 
         no_date_domain = Domain.AND(event_details['no_date_domain'])
         dates = event_details['dates']
         for date in dates:
-            if date[0] != 'all':
-                date[3] = Event.search_count(no_date_domain & domain_search & Domain(date[2]))
+            date[3] = Event.search_count(no_date_domain & domain_search & Domain(date[2]))
 
         no_country_domain = Domain.AND(event_details['no_country_domain'])
         country_groups = Event._read_group(
@@ -148,12 +150,15 @@ class WebsiteEventController(http.Controller):
                 'country_id': g_country and (g_country.id, g_country.sudo().display_name),
             })
 
-        clicked_tag_id = searches.pop('pinned_tag', '')
-        clicked_category = request.env['event.tag'].browse(
-            int(clicked_tag_id)).exists().category_id if clicked_tag_id.isdigit() else None
+        clicked_section_id = searches.pop('pinned_section_id', '')
         search_tags = self._extract_searched_event_tags(searches, slug_tags).filtered(
-            lambda tag: tag.category_id == clicked_category
-            or tag in available_tags_by_category.get(tag.category_id.id, tag))
+            lambda tag: str(tag.category_id.id) == clicked_section_id
+            or tag in reachable_tags_by_category.get(tag.category_id.id, tag))
+        available_tags_by_category = {
+            category.id: category.tag_ids.filtered(
+                lambda tag: tag.color and (tag in reachable_tags_by_category[category.id] or tag in search_tags))
+            for category in categories
+        }
         current_date = event_details['current_date']
         current_type = None
         current_country = None

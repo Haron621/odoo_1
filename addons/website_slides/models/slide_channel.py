@@ -1075,7 +1075,7 @@ class SlideChannel(models.Model):
             # OR inside a group, AND between groups.
             for group, group_tags in tags.grouped('group_id').items():
                 tag_domains[group.id] = [('tag_ids', 'in', group_tags.ids)]
-            domain += tag_domains.values()
+            domain.extend(tag_domains.values())
         if slide_category and 'nbr_%s' % slide_category in self:
             domain.append([('nbr_%s' % slide_category, '>', 0)])
 
