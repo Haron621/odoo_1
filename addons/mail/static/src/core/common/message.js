@@ -274,6 +274,20 @@ export class Message extends Component {
         return action.definition.isMoreAction ? MoreMessageInlineAction : CircleInlineAction;
     }
 
+    /**
+     * The menu of "Expand" opens beside the message, away from its side.
+     *
+     * @type {import("@mail/core/common/action").PanelContainer}
+     */
+    get actionPanelContainer() {
+        const side = this.isAlignedRight ? "left" : "right";
+        return {
+            type: "dropdown",
+            menuClass: "o-mail-Message-moreMenu",
+            position: `${side}-${this.message.threadAsNewest ? "end" : "start"}`,
+        };
+    }
+
     get messageActionsParams() {
         return {
             message: () => this.message,
@@ -312,14 +326,6 @@ export class Message extends Component {
         return moreActions?.length
             ? this.messageActions.more(this.messageActionsParams, {
                   actions: moreActions,
-                  dropdownMenuClass: "o-mail-Message-moreMenu",
-                  dropdownPosition: this.isAlignedRight
-                      ? this.message.threadAsNewest
-                          ? "left-end"
-                          : "left-start"
-                      : this.message.threadAsNewest
-                      ? "right-end"
-                      : "right-start",
                   name: _t("Expand"),
               })
             : undefined;

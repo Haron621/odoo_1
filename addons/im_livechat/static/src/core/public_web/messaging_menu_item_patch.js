@@ -41,5 +41,12 @@ const messagingMenuItemPatch = {
             ({ ms }) => ms
         );
     },
+    /** The status selection is a list that fills the dropdown on its own. */
+    getPanelContainer(params) {
+        if (this.channel && params.action.id === "livechat-status") {
+            return { type: "dropdown", menuClass: "p-0" };
+        }
+        return super.getPanelContainer(params);
+    },
 };
 patch(MessagingMenuItem.prototype, messagingMenuItemPatch);

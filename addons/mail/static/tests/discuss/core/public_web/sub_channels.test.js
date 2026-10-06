@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -154,7 +155,7 @@ test("create sub thread from sub-thread list", async () => {
     const channelId = pyEnv["discuss.channel"].create({ name: "General" });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
     await click("button[title='Threads']");
     await contains(".o-mail-SubChannelList:text('This conversation has no threads yet.')");
     await click("button[aria-label='Create Thread']");
@@ -213,7 +214,7 @@ test("sub thread is available for channel and group, not for chat", async () => 
     });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // wait for auto-open of this panel
+    await contains(actionPanel("Members")); // wait for auto-open of this panel
     await click("button[title='Threads']");
     await insertText(
         ".o-mail-ActionPanel input[placeholder='Search by name']",

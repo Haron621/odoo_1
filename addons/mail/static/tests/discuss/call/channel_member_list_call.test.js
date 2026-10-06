@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -55,7 +56,7 @@ test("call participants and invitees are grouped in their own box", async () => 
     await start();
     await openDiscuss(channelId);
     await click("[title='Join Call']");
-    await contains(".o-discuss-ChannelMemberList");
+    await contains(actionPanel("Members"));
     await contains(
         ".o-discuss-ChannelMemberList-group h6:text('In this call - 2') + div .o-discuss-ChannelMember:text('Mitchell Admin')"
     );
@@ -66,7 +67,7 @@ test("call participants and invitees are grouped in their own box", async () => 
         ".o-discuss-ChannelMemberList-group h6:text('Also invited - 1') + div .o-discuss-ChannelMember:text('Laurie')"
     );
     await contains(
-        ".o-discuss-ChannelMemberList h6:text('Online - 1') + div .o-discuss-ChannelMember:text('Bob')"
+        `${actionPanel("Members")} h6:text('Online - 1') + div .o-discuss-ChannelMember:text('Bob')`
     );
     await contains(".o-discuss-ChannelMemberList-group h6:text('In this call - 2')");
     await contains(".o-discuss-ChannelMemberList-group h6:text('Also invited - 1')");

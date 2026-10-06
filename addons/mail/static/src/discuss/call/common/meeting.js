@@ -51,9 +51,9 @@ export class Meeting extends Component {
                     openChat: () =>
                         this.threadActions.actions
                             .find((action) => action.id === "meeting-chat")
-                            ?.actionPanelOpen(),
+                            ?.openPanel(),
                 },
-                { hasPreviousActionPanel: () => this.threadActions.actionStack.length > 0 }
+                { hasPreviousActionPanel: () => this.threadActions.panelStack.length > 0 }
             ),
         });
         this.threadActions = useThreadActions({ thread: () => this.channel.thread });
@@ -115,8 +115,8 @@ export class Meeting extends Component {
     }
 
     onEscape() {
-        if (this.threadActions.activeAction) {
-            this.threadActions.activeAction.actionPanelClose();
+        if (this.threadActions.panelAction) {
+            this.threadActions.panelAction.closePanel();
             return true;
         }
         if (this.rtc.isFullscreen && !this.rtc.isBrowserFullscreen) {

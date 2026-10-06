@@ -1,6 +1,7 @@
 import { onWebsocketEvent } from "@bus/../tests/mock_websocket";
 import { BusPlugin } from "@bus/services/bus_plugin";
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -21,10 +22,10 @@ test("Member list and Pinned Messages Panel menu are exclusive", async () => {
     const channelId = pyEnv["discuss.channel"].create({ name: "General" });
     await start();
     await openDiscuss(channelId);
-    await contains(".o-discuss-ChannelMemberList"); // member list open by default
+    await contains(actionPanel("Members")); // member list open by default
     await click("[title='Pinned Messages']");
-    await contains(".o-discuss-PinnedMessagesPanel");
-    await contains(".o-discuss-ChannelMemberList", { count: 0 });
+    await contains(actionPanel("Pinned Messages"));
+    await contains(actionPanel("Members"), { count: 0 });
 });
 
 test("subscribe to presence channels according to store data", async () => {

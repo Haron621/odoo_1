@@ -1,4 +1,5 @@
 import {
+    actionPanel,
     click,
     contains,
     defineMailModels,
@@ -35,9 +36,9 @@ test("Opening Pinned Messages Panel twice from notification only needs one click
     await start();
     await openDiscuss(channelId);
     await click("a[data-oe-type='pin-menu']");
-    await contains(".o-discuss-PinnedMessagesPanel");
+    await contains(actionPanel("Pinned Messages"));
     await click("a[data-oe-type='pin-menu']");
-    await contains(".o-discuss-PinnedMessagesPanel");
+    await contains(actionPanel("Pinned Messages"));
     await click("button[name='pinned-messages'].active");
-    await contains(".o-discuss-PinnedMessagesPanel", { count: 0 });
+    await contains(actionPanel("Pinned Messages"), { count: 0 });
 });
