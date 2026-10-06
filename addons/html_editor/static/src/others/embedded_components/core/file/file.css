@@ -15,9 +15,10 @@
 
     &:has(iframe) {
         display: block;
+        width: 100%;
     }
     iframe.o_file_preview_iframe {
-        width: 200%;
-        filter: drop-shadow(2px 4px 6px black);
+        margin-top: 6px;
+        margin-bottom: 6px;
     }
 }

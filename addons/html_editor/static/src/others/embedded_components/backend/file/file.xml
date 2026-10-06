@@ -10,10 +10,21 @@
         </xpath>
         <xpath expr="//EmbeddedComponentToolbar" position="after">
             <t t-if="this.fileModel.isViewable">
-                <button class="oi btn" data-icon="push_pin" t-on-click="this.toggleInlinePreview"
+                <button class="oi btn" data-icon="push_pin"
+                    data-tooltip="Enable inline preview"
+                    aria-label="Enable inline preview"
+                    t-on-click="this.toggleInlinePreview"
                     t-att-class="{ 'oi-filled': this.state.isPreviewInline }"
                 />
             </t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_form_pdf_controls')]" position="inside">
+            <button class="oi btn btn-secondary" data-icon="push_pin"
+                data-tooltip="Remove inline preview"
+                aria-label="Remove inline preview"
+                t-on-click="this.toggleInlinePreview"
+                t-att-class="{ 'oi-filled': this.state.isPreviewInline }"
+            />
         </xpath>
         <xpath expr="//span[hasclass('o_file_name_container')]" position="attributes">
             <attribute name="t-att-class">{
