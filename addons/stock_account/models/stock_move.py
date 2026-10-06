@@ -306,11 +306,75 @@ class StockMove(models.Model):
         lots_to_recompute = set()
         fifo_qty_processed = defaultdict(float)
 
+<<<<<<< cead1f02a4ae830416fcf71f9610f844d1fa11a6
         for move in self:
             move = move.with_company(move.company_id)
             # Incoming moves
             if move.is_in:
                 products_to_recompute.add(move.product_id.id)
+||||||| d0166e03d88e2c07b7428f283ca43bd743a4c9f5
+        for company, moves in self.grouped('company_id').items():
+            extra_value_by_product = defaultdict(float)
+            extra_qty_by_product = defaultdict(float)
+
+            for move in moves:
+                move = move.with_company(company.id)
+                # Incoming moves
+                if move.is_in:
+                    products_to_recompute.add(move.product_id.id)
+                    if move.product_id.lot_valuated:
+                        if any(not ml.lot_id for ml in move.move_line_ids):
+                            raise UserError(self.env._(
+                                "A lot/serial number is required for product '%s' as it has lot valuation enabled.",
+                                move.product_id.display_name))
+                        lots_to_recompute.update(move.move_line_ids.lot_id.ids)
+                    move.value = move.sudo()._get_value()
+                    if self.env.context.get('std_price_incremental_recompute') and move.product_id.is_storable:
+                        # fast path: add extra_value/extra_qty to standard price (only realtime)
+                        extra_value_by_product[move.product_id] += move.value
+                        extra_qty_by_product[move.product_id] += move._get_valued_qty()
+                    continue
+                # Outgoing moves
+                if not move._is_out():
+                    continue
+                if correction_quantity:
+                    previous_qty = move.quantity - correction_quantity
+                    if previous_qty:
+                        ratio = correction_quantity / previous_qty
+                        move.value += ratio * move.value
+                        continue
+=======
+        for company, moves in self.grouped('company_id').items():
+            extra_value_by_product = defaultdict(float)
+            extra_qty_by_product = defaultdict(float)
+
+            for move in moves:
+                move = move.with_company(company.id)
+                # Incoming moves
+                if move.is_in:
+                    products_to_recompute.add(move.product_id.id)
+                    if move.product_id.lot_valuated:
+                        if any(not ml.lot_id for ml in move.move_line_ids):
+                            raise UserError(self.env._(
+                                "A lot/serial number is required for product '%s' as it has lot valuation enabled.",
+                                move.product_id.display_name))
+                        lots_to_recompute.update(move.move_line_ids.lot_id.ids)
+                    move.value = move.sudo()._get_value()
+                    if self.env.context.get('std_price_incremental_recompute') and move.product_id.is_storable:
+                        # fast path: add extra_value/extra_qty to standard price (only realtime)
+                        extra_value_by_product[move.product_id] += move.value
+                        extra_qty_by_product[move.product_id] += move._get_valued_qty()
+                    continue
+                # Outgoing moves
+                if not move._is_out():
+                    continue
+                if correction_quantity:
+                    previous_qty = move._quantity_sml() - correction_quantity
+                    if previous_qty:
+                        ratio = correction_quantity / previous_qty
+                        move.value += ratio * move.value
+                        continue
+>>>>>>> 3a68ef67dffd50369b18f71d52a1d27855c9b7d5
                 if move.product_id.lot_valuated:
                     if any(not ml.lot_id for ml in move.move_line_ids):
                         raise UserError(self.env._(
