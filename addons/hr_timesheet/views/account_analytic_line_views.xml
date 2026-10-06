@@ -11,8 +11,8 @@
                     <field name="employee_id" column_invisible="True" readonly="readonly_timesheet"/>
                     <field name="project_id" options="{'no_create_edit': True}" required="1" readonly="readonly_timesheet"
                         context="{'search_default_my_projects': True}"/>
-                    <field name="task_id" optional="show" options="{'no_create_edit': True, 'no_open': True}" widget="task_with_hours"
-                        context="{'default_project_id': project_id, 'search_default_my_tasks': True, 'search_default_open_tasks': True}"
+                    <field name="task_id" optional="show" options="{'no_create_edit': True}" widget="task_with_hours"
+                        context="{'default_project_id': project_id, 'search_default_my_tasks': True, 'search_default_open_tasks': True, 'form_view_ref': 'hr_timesheet.view_task_form2_inherited_timesheet_line'}"
                         readonly="readonly_timesheet"/>
                     <field name="name" optional="show" required="0" readonly="readonly_timesheet"/>
                     <field name="unit_amount" string="Time Spent" optional="show" widget="timesheet_uom" sum="Total" readonly="readonly_timesheet"
