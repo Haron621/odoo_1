@@ -62,16 +62,17 @@ export class ButtonStyleOption extends BaseOptionComponent {
         });
     }
 
-    getEditAction() {
+    getEditAction(buttonType) {
         return {
             title: _t("Edit color in Theme Tab"),
-            onClick: () => this.goToThemeTab(),
+            onClick: () => this.goToThemeTab(buttonType),
         };
     }
 
-    goToThemeTab() {
+    goToThemeTab(buttonType) {
         this.env.editColorCombination(
-            parseInt(this.state.buttonCombinationClass.replace("o_cc", ""))
+            parseInt(this.state.buttonCombinationClass.replace("o_cc", "")),
+            `btn-${buttonType}`
         );
     }
 

@@ -13,7 +13,7 @@ export class ShadowOption extends BaseOptionComponent {
     getEditAction(shadowClass) {
         return {
             title: _t("Edit in Theme Tab"),
-            onClick: () => this.env.editThemeOption(shadowClass, "theme-shadow"),
+            onClick: () => this.env.editThemeOption(shadowClass),
         };
     }
 }

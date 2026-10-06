@@ -15,7 +15,7 @@
             </t>
             <t t-foreach="this.buttonTypesData.slice(1)" t-as="opt" t-key="opt.type">
                 <BuilderSelectItem actionValue="opt.type" preview="opt.type !== 'custom'">
-                    <t t-set="edit" t-value="opt.type === 'custom' ? false : this.getEditAction()"/>
+                    <t t-set="edit" t-value="opt.type === 'custom' ? false : this.getEditAction(opt.type)"/>
                     <t t-call="html_builder.BuilderSelectItemEdit">
                         <div class="d-flex gap-2">
                             <div class="btn my-2" aria-hidden="true"
