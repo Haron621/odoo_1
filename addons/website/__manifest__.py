@@ -543,11 +543,12 @@
             '0': ['s_title_split', 's_parallax', 's_text_bold', 's_numbers_lite', 's_achievements_list', 's_manifesto', 's_references_grid', 's_company_team_spotlight', 's_call_to_action'],
             '1': ['s_banner_contained', 's_text_block_split', 's_duo_images', 's_process_steps'],
             '2': ['s_splash_intro', 's_shape_image', 's_bento_features', 's_faq_collapse', 's_cta_centered'],
+            '3': ['s_title_split', 's_quotes_carousel', 's_team_board', 's_numbers_boxed'],
         },
         'services': {
             '0': ['s_title_split', 's_parallax', 's_text_block_split', 's_features', 's_quotes_carousel_minimal', 's_call_to_action'],
             '1': ['s_services_pack', 's_cta_centered'],
-            '2': ['s_showcase_square', 's_text_bold', 's_services_grid'],
+            '2': ['s_showcase_square', 's_text_bold', 's_services_grid', 's_blockquote_quote'],
             '3': ['s_animated_cover', 's_references_lite', 's_achievements_list', 's_numbers_lite', 's_quotes_carousel_compact', 's_website_form_bold'],
             '4': ['s_discovery', 's_features_image', 's_image_features', 's_reviews_wall', 's_call_to_action'],
             '5': ['s_closer_look', 's_features_cards', 's_manifesto', 's_comparisons', 's_faq_collapse', 's_cta_centered'],
