@@ -17,6 +17,8 @@ class TestJPSaleReport(AccountTestInvoicingCommon):
         cls.env['res.lang']._activate_lang('ja_JP')
         cls.env.user.group_ids |= cls.env.ref('sales_team.group_sale_salesman')
         cls.partner_a.lang = 'ja_JP'
+        # base translates the yen's unit to 円, but a test database does not load it.
+        cls.env.ref('base.JPY').with_context(lang='ja_JP').currency_unit_label = '円'
         cls.jpy_currency = cls.env.ref('base.JPY')
         cls.jpy_currency.active = True
         cls.jpy_pricelist = cls.env['product.pricelist'].create({

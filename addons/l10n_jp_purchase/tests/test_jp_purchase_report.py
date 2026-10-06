@@ -15,6 +15,8 @@ class TestJPPurchaseReport(AccountTestInvoicingCommon):
         cls.env['res.lang']._activate_lang('ja_JP')
         cls.other_currency = cls.setup_other_currency('JPY')
         cls.partner_a.lang = 'ja_JP'
+        # base translates the yen's unit to 円, but a test database does not load it.
+        cls.env.ref('base.JPY').with_context(lang='ja_JP').currency_unit_label = '円'
         cls.other_currency.active = True
         cls.company_data['company'].external_report_layout_id = cls.env.ref('l10n_jp.external_layout_jp_standard')
 

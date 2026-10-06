@@ -15,6 +15,8 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         super().setUpClass()
         cls.env['res.lang']._activate_lang('ja_JP')
         cls.partner_a.lang = 'ja_JP'
+        # base translates the yen's unit to 円, but a test database does not load it.
+        cls.env.ref('base.JPY').with_context(lang='ja_JP').currency_unit_label = '円'
         cls.env.ref('base.JPY').active = True
         cls.company_data['company'].external_report_layout_id = cls.env.ref('l10n_jp.external_layout_jp_standard')
         # l10n_din5008 rewrites the unit price cell to the monetary widget for
@@ -66,6 +68,16 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertTrue(wizard.l10n_jp_is_jp_layout)
         wizard.l10n_jp_display_currency_code = False
         self.assertFalse(company.l10n_jp_display_currency_code)
+
+    def test_document_layout_preview_follows_the_currency_code_choice(self):
+        # The preview speaks the language of the user configuring it.
+        wizard = self.env['base.document.layout'].with_context(lang='ja_JP').create({
+            'company_id': self.company_data['company'].id,
+            'report_layout_id': self.env.ref('l10n_jp.report_layout_jp_standard').id,
+        })
+        self.assertIn('(円)', html2plaintext(wizard.preview))
+        wizard.l10n_jp_display_currency_code = False
+        self.assertNotIn('(円)', html2plaintext(wizard.preview))
 
     def test_payment_receipt_uses_jp_honorific(self):
         payment = self.init_payment(100.0, partner=self.partner_a, post=True)

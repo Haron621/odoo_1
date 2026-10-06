@@ -9,7 +9,7 @@ class ResCompany(models.Model):
         string="Display Currency Code",
         default=True,
         help="Name the currency in the price column headers of the Japanese Business layout: "
-             "円 for yen, its code (USD, CNY, ...) for any other currency.",
+             "the yen by its name in the document's language (円 in Japanese), any other currency by its code (USD, CNY, ...).",
     )
 
     def _l10n_jp_hide_zero_decimals(self, amounts):

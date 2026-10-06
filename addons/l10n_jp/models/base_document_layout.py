@@ -14,6 +14,11 @@ class BaseDocumentLayout(models.TransientModel):
         for wizard in self:
             wizard.l10n_jp_is_jp_layout = bool(jp_layout) and wizard.report_layout_id == jp_layout
 
+    @api.depends('l10n_jp_display_currency_code')
+    def _compute_preview(self):
+        # EXTENDS 'web' - re-render the preview when the headers change.
+        super()._compute_preview()
+
     @api.model
     def _extract_company_layout_vals(self, vals):
         # The account configurator writes the company as superuser, and only
