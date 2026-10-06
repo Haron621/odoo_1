@@ -12,7 +12,6 @@
         <field name="target">self</field>
     </record>
 
-
     <!-- Template for home and contactus -->
     <template id="website.homepage" name="Home">
         <t t-call="website.layout" pageName.f="homepage">
@@ -237,6 +236,23 @@
                         </section>
                     </div>
                     <input t-if='website.plausible_shared_key' type='hidden' class='js_plausible_push' data-event-name='Lead Generation' data-event-params='{"CTA": "Contact Us"}' />
+                </t>
+            </t>
+        </field>
+    </record>
+    <record id="team_board_page" model="website.page">
+        <field name="name">Our Team</field>
+        <field name="type">qweb</field>
+        <field name="url">/team</field>
+        <field name="is_published">True</field>
+        <field name="published_date" eval="time.strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="key">website.team_board_page</field>
+        <field name="arch" type="xml">
+            <t name="Our Team" t-name="website.team_page">
+                <t t-call="website.layout">
+                    <div id="wrap" class="oe_structure oe_empty">
+                        <t t-snippet-call="website.s_team_board"/>
+                    </div>
                 </t>
             </t>
         </field>
@@ -596,6 +612,13 @@
             <field name="page_id" ref="website.homepage_page"/>
             <field name="parent_id" ref="website.main_menu"/>
             <field name="sequence" type="int">10</field>
+        </record>
+        <record id="menu_team" model="website.menu">
+            <field name="website_id" eval="False"/>
+            <field name="name">Team</field>
+            <field name="page_id" ref="website.team_board_page"/>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">11</field>
         </record>
     </data>
 </odoo>
