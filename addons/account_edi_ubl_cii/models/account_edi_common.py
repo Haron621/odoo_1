@@ -1014,11 +1014,25 @@ class AccountEdiCommon(models.AbstractModel):
             if start_date_node is not None and end_date_node is not None:  # there is a constraint forcing none or the two to be set
                 start_date = datetime.strptime(start_date_node.text.strip(), xpath_dict['date_format'])
                 end_date = datetime.strptime(end_date_node.text.strip(), xpath_dict['date_format'])
+<<<<<<< f3bd5c506f6b2c2fda7e7e6b33024ed69d615d8c
         deferred_values = {
             'deferred_start_date': start_date,
             'deferred_end_date': end_date,
         }
         line_vals = self._retrieve_line_vals(record, tree, document_type, qty_factor)
+||||||| 36bd3d394e680827486d1cf1e594d7a7f832f4ba
+        deferred_values = {
+            'deferred_start_date': start_date,
+            'deferred_end_date': end_date,
+        }
+        line_vals = self._retrieve_line_vals(tree, document_type, qty_factor)
+=======
+                deferred_values = {
+                    'deferred_start_date': start_date,
+                    'deferred_end_date': end_date,
+                }
+        line_vals = self._retrieve_line_vals(tree, document_type, qty_factor)
+>>>>>>> edd18b9c80ef1e8332438900a174e456851bc7d5
         if not line_vals.get('price_subtotal'):
             return None
 
