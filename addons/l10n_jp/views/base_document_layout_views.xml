@@ -6,7 +6,6 @@
         <field name="inherit_id" ref="web.view_base_document_layout"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='report_layout_id']" position="after">
-                <field name="l10n_jp_is_jp_layout" invisible="1"/>
                 <field name="l10n_jp_display_currency_code" invisible="not l10n_jp_is_jp_layout"/>
             </xpath>
         </field>

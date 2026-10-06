@@ -49,7 +49,7 @@ Note:
     ],
     'assets': {
         'web.report_assets_common': [
-            'l10n_jp/static/src/scss/report_jp_standard.scss',
+            'l10n_jp/static/src/css/report_jp_standard.css',
         ],
     },
     'demo': [
