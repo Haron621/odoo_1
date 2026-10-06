@@ -571,10 +571,10 @@ class AccountMove(models.Model):
             return []
 
         def check():
-            if transaction_type == 'b2bi' and (reference_error := self._l10n_fr_pdp_get_credit_note_reference_error()):
+            if reference_error := self._l10n_fr_pdp_get_credit_note_reference_error():
                 yield reference_error
 
-            if transaction_type == 'b2bi' and self.move_type in ('out_refund', 'in_refund') and not self.reversed_entry_id:
+            if self.move_type in ('out_refund', 'in_refund') and not self.reversed_entry_id:
                 reference_data = self._l10n_fr_pdp_get_credit_note_reference_data()
                 if reference_data['type'] != 'invalid' and not G1_05_REFERENCE_RE.fullmatch(reference_data['reference']):
                     yield _("The previous document reference does not meet the Flow 10 format requirements.")
