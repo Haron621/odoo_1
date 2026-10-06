@@ -102,7 +102,7 @@
                                             <field name="effective_hours" widget="timesheet_uom" nolabel="1" />
                                         </div>
                                     </div>
-    
+
                                     <!-- Time Spent on Sub-tasks -->
                                     <div class="row align-items-center mb-2" invisible="subtask_effective_hours == 0.0">
                                         <div class="col-8">
@@ -114,7 +114,7 @@
                                             <field name="subtask_effective_hours" widget="timesheet_uom" class="mt-2" nolabel="1" />
                                         </div>
                                     </div>
-    
+
                                     <!-- Total Hours Spent -->
                                     <div class="row align-items-center mb-2" invisible="subtask_effective_hours == 0.0">
                                         <div class="col-8">
@@ -125,7 +125,7 @@
                                             <field name="total_hours_spent" widget="timesheet_uom" class="oe_subtotal_footer_separator" nolabel="1" />
                                         </div>
                                     </div>
-    
+
                                     <!-- Remaining Hours -->
                                     <div class="row align-items-center mb-2" invisible="allocated_hours == 0.0">
                                         <div class="col-8">
@@ -150,6 +150,16 @@
                     <field name="remaining_hours" widget="timesheet_uom" sum="Time Remaining" optional="hide" decoration-danger="progress &gt;= 1" decoration-warning="progress &gt;= 0.8 and progress &lt; 1" groups="hr_timesheet.group_hr_timesheet_user" column_invisible="context.get('template_project')"/>
                     <field name="progress" widget="project_task_progressbar" optional="hide" decoration-danger="progress > 1" groups="hr_timesheet.group_hr_timesheet_user" column_invisible="context.get('template_project')"/>
                 </xpath>
+            </field>
+        </record>
+
+        <record id="view_task_form2_inherited_timesheet_line" model="ir.ui.view">
+            <field name="name">project.task.form.inherited.timesheet.line</field>
+            <field name="model">project.task</field>
+            <field name="inherit_id" ref="project.view_task_form2"/>
+            <field name="mode">primary</field>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='page_timesheets']" position="replace"/>
             </field>
         </record>
 
