@@ -457,6 +457,139 @@ class TestHolidaysMultiContract(TestHolidayContract):
             'request_date_from': date(2023, 7, 14),
             'request_date_to': date(2023, 7, 14),
         })
+<<<<<<< 2d9fd5562a0ef1f7f587eb393cc3bd293b047cca:addons/hr_holidays/tests/test_multi_contract.py
         # Assert based on partial-time calendar
         self.assertEqual(leave.number_of_days, 1)
         self.assertEqual(leave.number_of_hours, 6)
+||||||| 29ddf520082104fdd2b63962ba63a88c0f23b8a7:addons/hr_holidays_contract/tests/test_multi_contract.py
+
+        leave1.action_approve()
+        leave2.action_approve()
+
+        full_contract.write({
+            'state': 'close',
+        })
+        half_contract.write({
+            'state': 'open',
+        })
+
+        self.assertEqual(leave2.number_of_hours, calendar_partial.full_time_required_hours)
+
+    @freeze_time('2024-06-12 10:00:00')
+    def test_compute_leave_status_fully_flexible_contract(self):
+        """Test that reading the leave status of an employee on a fully flexible
+        contract (no working schedule) does not crash when the employee is
+        currently on a validated leave."""
+        employee = self.env['hr.employee'].create({'name': 'Flex Employee'})
+        self.env['hr.contract'].create({
+            'name': 'Fully flexible contract',
+            'employee_id': employee.id,
+            'date_start': date(2024, 1, 1),
+            'resource_calendar_id': False,
+            'wage': 1000.0,
+            'state': 'open',
+        })
+        leave = self.env['hr.leave'].create({
+            'employee_id': employee.id,
+            'holiday_status_id': self.leave_type.id,
+            'request_date_from': '2024-06-10',
+            'request_date_to': '2024-06-14',
+        })
+        leave.action_approve()
+        self.assertRecordValues(employee, [{
+            'is_absent': True,
+            'current_leave_state': 'validate',
+        }])
+=======
+
+        leave1.action_approve()
+        leave2.action_approve()
+
+        full_contract.write({
+            'state': 'close',
+        })
+        half_contract.write({
+            'state': 'open',
+        })
+
+        self.assertEqual(leave2.number_of_hours, calendar_partial.full_time_required_hours)
+
+    @freeze_time('2024-06-12 10:00:00')
+    def test_compute_leave_status_fully_flexible_contract(self):
+        """Test that reading the leave status of an employee on a fully flexible
+        contract (no working schedule) does not crash when the employee is
+        currently on a validated leave."""
+        employee = self.env['hr.employee'].create({'name': 'Flex Employee'})
+        self.env['hr.contract'].create({
+            'name': 'Fully flexible contract',
+            'employee_id': employee.id,
+            'date_start': date(2024, 1, 1),
+            'resource_calendar_id': False,
+            'wage': 1000.0,
+            'state': 'open',
+        })
+        leave = self.env['hr.leave'].create({
+            'employee_id': employee.id,
+            'holiday_status_id': self.leave_type.id,
+            'request_date_from': '2024-06-10',
+            'request_date_to': '2024-06-14',
+        })
+        leave.action_approve()
+        self.assertRecordValues(employee, [{
+            'is_absent': True,
+            'current_leave_state': 'validate',
+        }])
+
+    @freeze_time('2026-09-24')
+    def test_recompute_leave_on_contract_change_date_rollover(self):
+        employee = self.env['hr.employee'].create({
+            'name': 'mythra juice box',
+            'tz': 'America/New_York'
+        })
+        first_schedule, second_schedule = self.env['resource.calendar'].create([
+            {
+                'name': "40 Hour Schedule",
+                'tz': "America/New_York"
+            },
+            {
+                'name': '50 Hour Schedule',
+                'tz': 'America/New_York',
+                'attendance_ids': [
+                    (0, 0, {'name': 'Monday', 'dayofweek': '0', 'hour_from': 12, 'hour_to': 22, 'day_period': 'morning'}),
+                    (0, 0, {'name': 'Tuesday', 'dayofweek': '1', 'hour_from': 12, 'hour_to': 22, 'day_period': 'morning'}),
+                    (0, 0, {'name': 'Wednesday', 'dayofweek': '2', 'hour_from': 12, 'hour_to': 22, 'day_period': 'morning'}),
+                    (0, 0, {'name': 'Thursday', 'dayofweek': '3', 'hour_from': 12, 'hour_to': 22, 'day_period': 'morning'}),
+                    (0, 0, {'name': 'Friday', 'dayofweek': '4', 'hour_from': 12, 'hour_to': 22, 'day_period': 'morning'})
+                ]
+            }
+
+        ])
+        contract = self.env['hr.contract'].create({
+            'name': "mythra's contract",
+            'date_start': datetime.strptime('2026-09-01', '%Y-%m-%d').date(),
+            'employee_id': employee.id,
+            'resource_calendar_id': first_schedule.id,
+            'state': 'open',
+            'wage': 6700.0
+        })
+
+        allocation = self.env['hr.leave.allocation'].create({
+            'display_name': 'pto for mythra',
+            'date_from': datetime.strptime('2026-09-01', '%Y-%m-%d').date(),
+            'number_of_days': 3,
+            'holiday_status_id': self.env.ref('hr_holidays.holiday_status_cl').id,
+            'employee_id': employee.id
+        })
+        allocation.action_approve()
+
+        leave = self.env['hr.leave'].create({
+            'request_date_from': datetime(2026, 9, 15, 12, 0, 0),
+            'request_date_to': datetime(2026, 9, 17, 21, 0, 0),
+            'display_name': "mythra goes to elysium",
+            'employee_id': employee.id,
+            'holiday_status_id': self.env.ref('hr_holidays.holiday_status_cl').id,
+        })
+        leave.action_approve()
+
+        self.assertRaises(contract.write({'resource_calendar_id': second_schedule.id}))
+>>>>>>> ca413b842c48a60b2b349ff684d9aea7024463ee:addons/hr_holidays_contract/tests/test_multi_contract.py
