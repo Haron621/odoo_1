@@ -11,6 +11,14 @@ class CommonPosTest(AccountTestInvoicingCommon):
     _test_user_groups = None  # FIXME list needed groups
 
     @classmethod
+    def _create_company(cls, company_xmlid=None, **create_values):
+        # Avoid the branch fixture, which may contain demo journal entries.
+        create_values.setdefault('candidate_xmlids', (
+            'base.test_company', 'base.test_company_template', 'base.test_company_template2',
+        ))
+        return super()._create_company(company_xmlid=company_xmlid, **create_values)
+
+    @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
@@ -140,7 +148,8 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'company_id': cls.company.id,
             'code': 'BNKO',
             'sequence': 13,
-            'currency_id': cls.other_currency.id,
+            # TODO-PARP: Keep bank methods compatible with legacy tests selecting across configs.
+            'currency_id': False,
         })
 
     @classmethod
@@ -168,9 +177,11 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'receivable_account_id': cls.company_data['default_account_receivable'].id,
             'type': 'pay_later',
         })
-        # TODO-PARP: Remove these alias
+        # TODO-PARP: Remove these aliases after all modules are migrated.
         cls.cash_payment_method = cls.cash_pm
         cls.bank_payment_method = cls.bank_pm
+        cls.credit_payment_method = cls.credit_pm
+        cls.cash_pm1 = cls.cash_pm
 
         cls.cash_pm2 = cls.env['pos.payment.method'].create({
             'name': 'Cash Other',
@@ -209,8 +220,10 @@ class CommonPosTest(AccountTestInvoicingCommon):
             'use_pricelist': True,
             'available_pricelist_ids': [(6, 0, cls.pricelist_eur.ids)],
             'pricelist_id': cls.pricelist_eur.id,
-            'payment_method_ids': [(6, 0, cls.bank_pm2.ids)],
+            'payment_method_ids': [Command.set((cls.bank_pm2 | cls.bank_pm).ids)],
         })
+        # TODO-PARP: Remove this alias after all modules are migrated.
+        cls.basic_config = cls.pos_config_usd
 
     @classmethod
     def create_product_template(cls, name, list_price, pos_categ_ids=[], tax_ids=[], **kwargs):
@@ -264,9 +277,10 @@ class CommonPosTest(AccountTestInvoicingCommon):
         session = config.current_session_id
         closing_data = session.get_closing_control_data()
         cash_details = closing_data['default_cash_details']
-        session.close_session_from_ui({
-            cash_details['id']: cash_details['payment_amount'] if amount is None else amount,
-        } if cash_details else {})
+        payment_method_closing = {}
+        if cash_details.get('id'):
+            payment_method_closing[cash_details['id']] = cash_details['payment_amount'] if amount is None else amount
+        session.close_session_from_ui(payment_method_closing)
         self.assertEqual(session.state, 'closed')
         return session
 
@@ -401,6 +415,15 @@ class CommonPosTest(AccountTestInvoicingCommon):
     def create_backend_pos_order(self, data):
         pos_config = data.get('pos_config', self.pos_config_usd)
         order_data = data.get('order_data', {})
+        # TODO-PARP: Legacy backend callers supply a pricelist independently of the config.
+        # Align the existing config with that pricelist until those callers are migrated.
+        pricelist = self.env['product.pricelist'].browse(order_data.get('pricelist_id'))
+        if pricelist and pricelist.currency_id != pos_config.currency_id:
+            pos_config.journal_id.currency_id = pricelist.currency_id
+            pos_config.write({
+                'pricelist_id': pricelist.id,
+                'available_pricelist_ids': [Command.set(pricelist.ids)],
+            })
         line_product_ids = [line_data['product_id'] for line_data in data.get('line_data', [])]
         product_by_id = {p.id: p for p in self.env['product.product'].browse(line_product_ids)}
         refund = False
@@ -477,6 +500,36 @@ class TestPoSCommon(CommonPosTest):
         super().setUpClass()
         cls.basic_config = cls.pos_config_usd
         cls.other_currency_config = cls.pos_config_eur
+        # TODO-PARP: Remove this alias after all modules are migrated.
+        cls.account_tax_return_journal = cls.company_data['default_journal_misc']
+
+        # TODO-PARP: Keep the legacy pricelist setup until all modules are migrated.
+        pricelist = cls.env['product.pricelist'].with_context(active_test=False).search([
+            ('currency_id', '=', cls.company_currency.id),
+            ('company_id', 'in', [False, cls.company.id]),
+        ], limit=1)
+        if not pricelist:
+            pricelist = cls.env['product.pricelist'].create({
+                'name': 'Test Pricelist',
+                'currency_id': cls.company_currency.id,
+            })
+        pricelist.active = True
+        cls.basic_config.write({
+            'use_pricelist': True,
+            'pricelist_id': pricelist.id,
+            'available_pricelist_ids': [Command.set(pricelist.ids)],
+        })
+
+        # TODO-PARP: Remove these legacy tax fixtures after all modules are migrated.
+        cls.taxes['tax21'] = cls.taxes['tax21_incl']
+        cls.taxes['tax21'].price_include_override = 'tax_excluded'
+        cls.taxes.update(dict(zip(
+            ('tax_fixed006', 'tax_fixed012'),
+            cls.env['account.tax'].create([
+                {'name': 'Tax 0.06', 'amount_type': 'fixed', 'amount': 0.06, 'price_include_override': 'tax_excluded'},
+                {'name': 'Tax 0.12', 'amount_type': 'fixed', 'amount': 0.12, 'price_include_override': 'tax_excluded'},
+            ]),
+        )))
 
     # TODO-PARP: Move remaining TestPoSCommon helpers here.
     #

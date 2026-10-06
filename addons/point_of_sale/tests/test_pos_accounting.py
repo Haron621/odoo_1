@@ -722,6 +722,7 @@ class TestPosAccounting(CommonPosTest):
 
         cash_move = self.env['account.move.line'].search([
             ('account_id', '=', cash_receivable.id),
+            ('move_id', 'in', order.session_id._get_related_account_moves().ids),
         ]).mapped('amount_currency')
         self.assertEqual([-21.8, 21.8, 21.8, -21.8], cash_move)         # The config default journal is used because cash_pm doesn't have a journal
 
@@ -786,6 +787,7 @@ class TestPosAccounting(CommonPosTest):
 
         cash_move = self.env['account.move.line'].search([
             ('account_id', '=', cash_receivable.id),
+            ('move_id', 'in', order.session_id._get_related_account_moves().ids),
         ]).mapped('amount_currency')
         self.assertEqual([-21.8, 21.8, 21.8, -21.8], cash_move)         # The config default journal is used because cash_pm doesn't have a journal
 
@@ -847,6 +849,7 @@ class TestPosAccounting(CommonPosTest):
 
         cash_move = self.env['account.move.line'].search([
             ('account_id', '=', cash_receivable.id),
+            ('move_id', 'in', order.session_id._get_related_account_moves().ids),
         ]).mapped('amount_currency')
         self.assertEqual([-10.9, 10.9, 10.9, -10.9], cash_move)
 
@@ -1171,53 +1174,45 @@ class TestPosAccounting(CommonPosTest):
         )
 
     def test_pos_config_with_other_currency_than_company(self):
-        eur = self.env.ref('base.EUR')
-        usd = self.env.ref('base.USD')
-        self.other_currency.rate_ids.write({'currency_id': usd.id, 'rate': 2})
+        config = self.pos_config_eur
+        config.payment_method_ids |= self.cash_pm2
 
-        self.pos_config_usd.company_id.currency_id = eur
-        self.pos_config_usd.journal_id.currency_id = usd
-        self.pos_config_usd.currency_id = usd
-        self.cash_pm.journal_id.currency_id = usd
+        self.assertEqual(config.company_id.currency_id, self.company_currency)
+        self.assertEqual(config.currency_id, self.other_currency)
+        self.assertEqual(config.journal_id.currency_id, self.other_currency)
+        self.assertEqual(self.cash_pm2.journal_id.currency_id, self.other_currency)
 
-        self.assertEqual(self.pos_config_usd.company_id.currency_id, eur)
-        self.assertEqual(self.pos_config_usd.currency_id, usd)
-        self.assertEqual(self.pos_config_usd.journal_id.currency_id, usd)
-        self.assertEqual(self.cash_pm.journal_id.currency_id, usd)
-
-        session = self.open_new_session()
+        session = self.open_new_session(config=config)
         # UI prices are expressed in the configuration currency.
         order = self.create_pos_order(
-            payments=[[self.cash_pm, 21.8]],          # Total amount of the order is 10 + 6% tax + 10 + 12% tax = 21.8
+            config=config,
+            payments=[[self.cash_pm2, 21.8]],          # Total amount of the order is 10 + 6% tax + 10 + 12% tax = 21.8
             lines=[[self.ten_dollars_no_tax.product_variant_id, 1, 0, {'price_unit': 10}], [self.ten_dollars_with_10_incl.product_variant_id, 1, 0, {'price_unit': 10}]],
         )
 
         self.assertEqual(order.amount_total, 21.8)
         self.assertEqual(order.amount_paid, 21.8)
         self.assertEqual(order.state, 'paid')
-        self.close_pos_session()
+        self.close_pos_session(config=config)
 
         self.assertTrue(session.move_ids)
-        self.assertEqual(session.move_ids.currency_id, usd)
+        self.assertEqual(session.move_ids.currency_id, self.other_currency)
 
-        total_usd = session.move_ids.amount_total_in_currency_signed
-        total_eur = session.move_ids.amount_total_signed
-        self.assertEqual(total_usd, 21.8)
-        self.assertEqual(total_eur, 10.9)                               # 21.8 / 2 because of the rate we set on USD
+        self.assertEqual(session.move_ids.amount_total_in_currency_signed, 21.8)
+        self.assertEqual(session.move_ids.amount_total_signed, 10.9)    # 21.8 / 2 because of the EUR rate
 
-        session = self.open_new_session()
+        self.open_new_session(config=config)
         invoiced_order = self.create_pos_order(
-            payments=[[self.cash_pm, 21.8]],          # Total amount of the order is 10 + 6% tax + 10 + 12% tax = 21.8
+            config=config,
+            payments=[[self.cash_pm2, 21.8]],          # Total amount of the order is 10 + 6% tax + 10 + 12% tax = 21.8
             lines=[[self.ten_dollars_no_tax.product_variant_id, 1, 0, {'price_unit': 10}], [self.ten_dollars_with_10_incl.product_variant_id, 1, 0, {'price_unit': 10}]],
             customer=self.partner_mobt,
             to_invoice=True,
         )
         move = invoiced_order.account_move
-        self.assertEqual(move.currency_id, usd)
-        total_usd = move.amount_total_in_currency_signed
-        total_eur = move.amount_total_signed
-        self.assertEqual(total_usd, 21.8)
-        self.assertEqual(total_eur, 10.9)                               # 21.8 / 2 because of the rate we set on USD
+        self.assertEqual(move.currency_id, self.other_currency)
+        self.assertEqual(move.amount_total_in_currency_signed, 21.8)
+        self.assertEqual(move.amount_total_signed, 10.9)                # 21.8 / 2 because of the EUR rate
 
     def test_accounting_items_when_closing_with_bank_difference(self):
         session = self.open_new_session()

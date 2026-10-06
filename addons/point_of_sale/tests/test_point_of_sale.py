@@ -81,7 +81,8 @@ class TestPointOfSale(CommonPosTest):
             | self.ten_dollars_with_5_incl | self.twenty_dollars_with_5_incl
         ).with_context(tracking_disable=True)
         product1, product2, product3, product4 = products
-        products.available_in_pos = False
+        # Prepare the fixture without notifying other open self-order sessions.
+        products._write({'available_in_pos': False})
         config = self.pos_config_usd
         session = self.open_new_session(config=config)
 

@@ -89,7 +89,7 @@ class TestPoSSetup(CommonPosTest):
 
     def test_card_payment_method_initialization(self):
         """Test that the 'Card' payment method created by default has an outstanding account."""
-        self.bank_pm.active = False
+        (self.bank_pm | self.bank_pm2).active = False
         _, payment_method_ids = self.pos_config_usd._create_journal_and_payment_methods()
         card_pm = self.env['pos.payment.method'].browse(payment_method_ids).filtered(lambda pm: pm.name == 'Card')
         self.assertTrue(card_pm)
