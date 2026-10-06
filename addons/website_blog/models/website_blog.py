@@ -2,8 +2,17 @@
 
 from collections import defaultdict
 
+<<<<<<< 692f36da440d5795be7fffacee56bd5043123393
 from odoo import _, api, fields, models
 from odoo.tools import html_escape
+||||||| 1d227133a5d8a02153fd8a334103388b045a029b
+from odoo import api, models, fields, _
+from odoo.addons.website.tools import text_from_html
+=======
+from odoo import api, models, fields, _
+from odoo.fields import Domain
+from odoo.addons.website.tools import text_from_html
+>>>>>>> 41e954c31c1101cc061062356b6b5eca39abe0e1
 from odoo.tools.json import scriptsafe as json_scriptsafe
 from odoo.tools.translate import html_translate
 
@@ -299,6 +308,15 @@ class BlogPost(models.Model):
         res['default_opengraph']['og:title'] = self.name
         res['default_meta_description'] = self.subtitle
         return res
+
+    def _mail_get_operation_for_mail_message_operation(self, message_operation):
+        if (
+            message_operation == 'create'
+            and not self.env.user._is_internal()
+            and not self.env['website'].is_view_active('website_blog.opt_blog_post_comment')
+        ):
+            return [(Domain.TRUE, 'write')]
+        return super()._mail_get_operation_for_mail_message_operation(message_operation)
 
     @api.model
     def _search_get_detail(self, website, order, options):
