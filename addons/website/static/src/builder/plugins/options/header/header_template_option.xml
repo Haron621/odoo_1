@@ -12,9 +12,9 @@
         <BuilderRow label.translate="Background" level="1">
             <BuilderColorPicker
                 enabledTabs="['theme', 'custom', 'gradient']"
-                preview="false"
+                preview="true"
                 defaultColor="''"
-                action="'customizeWebsiteColor'"
+                action="'previewAreaColor'"
                 actionParam="{
                     mainParam: 'menu-custom',
                     gradientColor: 'menu-gradient',
@@ -23,9 +23,9 @@
                 }"/>
             <BuilderColorPicker t-if="this.isActiveItem('header_sales_one_opt')"
                 enabledTabs="['theme', 'custom', 'gradient']"
-                preview="false"
+                preview="true"
                 defaultColor="''"
-                action="'customizeWebsiteColor'"
+                action="'previewAreaColor'"
                 actionParam="{
                     mainParam: 'header-sales_one-custom',
                     gradientColor: 'menu-secondary-gradient',
@@ -34,9 +34,9 @@
                 }"/>
             <BuilderColorPicker t-if="this.isActiveItem('header_sales_two_opt')"
                 enabledTabs="['theme', 'custom', 'gradient']"
-                preview="false"
+                preview="true"
                 defaultColor="''"
-                action="'customizeWebsiteColor'"
+                action="'previewAreaColor'"
                 actionParam="{
                     mainParam: 'header-sales_two-custom',
                     gradientColor: 'menu-secondary-gradient',
@@ -45,9 +45,9 @@
                 }"/>
             <BuilderColorPicker t-if="this.isActiveItem('header_sales_three_opt')"
                 enabledTabs="['theme', 'custom', 'gradient']"
-                preview="false"
+                preview="true"
                 defaultColor="''"
-                action="'customizeWebsiteColor'"
+                action="'previewAreaColor'"
                 actionParam="{
                     mainParam: 'header-sales_three-custom',
                     gradientColor: 'menu-secondary-gradient',
@@ -56,9 +56,9 @@
                 }"/>
             <BuilderColorPicker t-if="this.isActiveItem('header_sales_four_opt')"
                 enabledTabs="['theme', 'custom', 'gradient']"
-                preview="false"
+                preview="true"
                 defaultColor="''"
-                action="'customizeWebsiteColor'"
+                action="'previewAreaColor'"
                 actionParam="{
                     mainParam: 'header-sales_four-custom',
                     gradientColor: 'menu-secondary-gradient',
@@ -67,7 +67,7 @@
                 }"/>
         </BuilderRow>
         <BuilderRow label.translate="Blur" level="2" t-if="this.domState.isBlurAvailable">
-            <BuilderRange action="'customizeWebsiteVariable'" actionParam="'header-bg-blur'" min="0" max="10" step="0.5" />
+            <BuilderRange action="'previewWebsiteVariable'" actionParam="'header-bg-blur'" min="0" max="10" step="0.5" />
         </BuilderRow>
         <t t-set="noPreviewOptionsContentWidth" t-value="[
             'header_boxed_opt',
@@ -79,7 +79,7 @@
         ]"/>
         <BuilderRow t-if="!this.isActiveItem('header_sidebar_opt')" label.translate="Content Width" level="1">
             <BuilderButtonGroup applyTo="'#o_main_nav'"
-                    action="this.hasSomeOptions(noPreviewOptionsContentWidth) and 'websiteConfig' or 'previewableWebsiteConfig'">
+                    action="this.hasSomeOptions(noPreviewOptionsContentWidth) and 'previewWebsiteConfig' or 'previewableWebsiteConfig'">
                 <BuilderButton
                     title.translate="Small"
                     iconImg="'/website/static/src/img/snippets_options/content_width_small.svg'"
@@ -97,7 +97,7 @@
 
         <BuilderRow t-if="this.isActiveItem('header_sidebar_opt')" label.translate="Width" level="1">
             <BuilderNumberInput
-                action="'customizeWebsiteVariable'"
+                action="'previewWebsiteVariable'"
                 actionParam="'sidebar-width'"
                 default="null"
                 unit="'px'"
@@ -105,7 +105,7 @@
         </BuilderRow>
 
         <BuilderRow label.translate="Scroll Effect" t-if="!this.isActiveItem('header_sidebar_opt')" level="1">
-            <BuilderSelect action="'websiteConfig'" className="'o_scroll_effects_selector'">
+            <BuilderSelect action="'previewWebsiteConfig'" className="'o_scroll_effects_selector'">
                 <BuilderSelectItem
                     id="'header_visibility_standard_opt'"
                     label.translate="Standard"
@@ -159,7 +159,7 @@
             </BuilderSelect>
         </BuilderRow>
         <BuilderRow t-if="!this.isActiveItem('header_sidebar_opt')" label.translate="Show Disclaimer">
-            <BuilderCheckbox action="'websiteConfig'" actionParam="{ views: ['website.option_header_disclaimer'] }"/>
+            <BuilderCheckbox action="'previewWebsiteConfig'" actionParam="{ views: ['website.option_header_disclaimer'] }"/>
         </BuilderRow>
     </t>
 
