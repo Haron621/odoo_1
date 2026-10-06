@@ -269,12 +269,20 @@ class IrHttp(models.AbstractModel):
         if request.is_frontend:
             lang = request.lang.code
             session_info['bundle_params']['lang'] = lang
-        lang = self._get_web_translations_lang(session_info['bundle_params']['lang'])
         session_info.update({
             'translationURL': '/website/translations',
-            'translation_hash': self._get_web_translations_hash(self.get_translation_frontend_modules(), lang),
+            'translation_hash': self._get_cached_frontend_translations_hash(session_info['bundle_params']['lang']),
         })
         return session_info
+
+    @api.model
+    def _get_cached_frontend_translations_hash(self, lang: str) -> str:
+        """ Return the hash of the translations served by /website/translations
+        for ``lang`` if it is cached, an empty string otherwise. """
+        return self._get_cached_web_translations_hash(
+            self.get_translation_frontend_modules(),
+            self._get_web_translations_lang(lang),
+        )
 
     @api.model
     def get_translation_frontend_modules(self) -> list[str]:

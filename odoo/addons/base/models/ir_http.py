@@ -35,6 +35,7 @@ from odoo.exceptions import AccessDenied
 from odoo.http import ROUTING_KEYS, SAFE_HTTP_METHODS, Response, request
 from odoo.modules.registry import Registry
 from odoo.service import security
+from odoo.tools.cache import get_cache_key_counter
 from odoo.tools.json import json_default
 from odoo.tools.misc import get_lang, submap
 from odoo.tools.translate import code_translations
@@ -465,6 +466,18 @@ class IrHttp(models.AbstractModel):
             # put in the transactional cache
             self.env.cr.cache['translation_data'] = translation_cache
         return hashlib.sha1(json.dumps(translation_cache, sort_keys=True, default=json_default).encode()).hexdigest()
+
+    @api.model
+    def _get_cached_web_translations_hash(self, modules, lang):
+        """ Return the result of ``_get_web_translations_hash`` if it is in
+        the ormcache, an empty string otherwise.
+
+        Computing the hash requires building all the translations, which is
+        too expensive to do while rendering a page. On a cold cache, the client
+        gets no hash and asks the translations endpoint, which fills the cache.
+        """
+        cache, key, _counter = get_cache_key_counter(self._get_web_translations_hash, modules, lang)
+        return cache.get(key, '')
 
     @classmethod
     def _is_allowed_cookie(cls, cookie_type):
