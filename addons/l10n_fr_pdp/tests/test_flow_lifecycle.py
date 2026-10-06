@@ -1487,6 +1487,9 @@ class TestPdpReportsFlowLifecycle(TestL10nFrPdpCommon):
 
         # The initial reports already reached the administration. Create their RE while the old
         # scopes are still known, then remove both the e-invoice and its cash-accounting payment.
+        # Invalidate the cache to ensure the non-stored pdp_is_sent dependency also triggers the
+        # payment recomputation when it has not been read beforehand.
+        self.env.invalidate_all()
         invoice.peppol_move_state = 'done'
         self.env.flush_all()
         (transaction_flow | payment_flow).invalidate_recordset(['rectificative_flow_ids'])

@@ -101,7 +101,6 @@ class AccountMove(models.Model):
         selection=[('transaction', 'Transaction'), ('payment', 'Payment')],
         compute='_compute_l10n_fr_pdp_flow_10_report_type',
         store=True,
-        recursive=True,
         copy=False,
     )
     l10n_fr_pdp_flow_10_operation_type = fields.Selection(
@@ -494,9 +493,9 @@ class AccountMove(models.Model):
         'commercial_partner_id',
         'l10n_fr_pdp_flow_10_operation_type',
         'line_ids.matched_credit_ids.credit_move_id',
-        'line_ids.matched_credit_ids.credit_move_id.move_id.l10n_fr_pdp_flow_10_report_type',
+        'line_ids.matched_credit_ids.credit_move_id.move_id.pdp_is_sent',
         'line_ids.matched_debit_ids.debit_move_id',
-        'line_ids.matched_debit_ids.debit_move_id.move_id.l10n_fr_pdp_flow_10_report_type',
+        'line_ids.matched_debit_ids.debit_move_id.move_id.pdp_is_sent',
         'move_type',
         'pdp_is_sent',
         'state',
@@ -553,7 +552,7 @@ class AccountMove(models.Model):
             return
 
         return self._get_reconciled_amls().move_id.filtered(
-            lambda move: move.l10n_fr_pdp_flow_10_report_type == 'transaction' and (
+            lambda move: not move.pdp_is_sent and move.l10n_fr_pdp_flow_10_report_type == 'transaction' and (
                 move._is_downpayment()
                 or any(tax.tax_exigibility == 'on_payment' for tax in move.invoice_line_ids.tax_ids)
             )
