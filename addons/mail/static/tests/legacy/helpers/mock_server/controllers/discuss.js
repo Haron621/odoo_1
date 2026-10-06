@@ -560,10 +560,19 @@ patch(MockServer.prototype, {
         const [session] = this.pyEnv["discuss.channel.rtc.session"].search_read([
             ["id", "=", session_id],
         ]);
+<<<<<<< 0827fccb38a8f9609cd1df35502f858837e48b3e:addons/mail/static/tests/legacy/helpers/mock_server/controllers/discuss.js
         const [currentChannelMember] = this.pyEnv["discuss.channel.member"].search_read([
+||||||| 25e101143588be3767de2153f49300156ddb1016:addons/mail/static/tests/helpers/mock_server/controllers/discuss.js
+        const [currentChannelMember] = this.pyEnv["discuss.channel.member"].searchRead([
+=======
+        if (!session) {
+            return;
+        }
+        const [currentChannelMember] = this.pyEnv["discuss.channel.member"].searchRead([
+>>>>>>> 27565feb6f0b0fb4001d43910f06dbe1e3763d1f:addons/mail/static/tests/helpers/mock_server/controllers/discuss.js
             ["id", "=", session.channel_member_id[0]],
         ]);
-        if (session && currentChannelMember.partner_id[0] === this.pyEnv.currentPartnerId) {
+        if (currentChannelMember.partner_id[0] === this.pyEnv.currentPartnerId) {
             this._mockDiscussChannelRtcSession__updateAndBroadcast(session.id, values);
         }
     },
