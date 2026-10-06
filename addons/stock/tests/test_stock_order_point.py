@@ -1,4 +1,5 @@
 from odoo import SUPERUSER_ID
+from odoo import fields
 from odoo.tests import tagged
 from odoo.addons.stock.tests.common import TestStockCommon
 
@@ -107,3 +108,25 @@ class TestStockOrderpointActivity(TestStockCommon):
             SUPERUSER_ID,
             "The activity creator leaked! It must be created by OdooBot (ID 1), not the portal user.",
         )
+
+    def test_unsnooze_orderpoint(self):
+        orderpoint = self.env["stock.warehouse.orderpoint"].create(
+            {
+                "name": "Snoozed Orderpoint",
+                "product_id": self.product.id,
+                "warehouse_id": self.warehouse.id,
+                "location_id": self.stock_location.id,
+                "product_min_qty": 0,
+                "product_max_qty": 0,
+                "trigger": "manual",
+                "company_id": self.env.company.id,
+                "snoozed_until": fields.Date.add(fields.Date.today(), days=7),
+                "snooze_reason": "Testing snooze",
+            }
+        )
+
+        self.assertTrue(orderpoint.is_snoozed, "Orderpoint should be snoozed initially.")
+        orderpoint.action_unsnooze()
+        self.assertFalse(orderpoint.is_snoozed, "Orderpoint should not be snoozed after unsnooze action.")
+        self.assertIsNone(orderpoint.snoozed_until, "Snoozed until date should be cleared after unsnooze action.")
+        self.assertIsNone(orderpoint.snooze_reason, "Snooze reason should be cleared after unsnooze action.")
