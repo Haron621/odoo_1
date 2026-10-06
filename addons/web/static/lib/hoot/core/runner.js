@@ -1891,18 +1891,21 @@ export class Runner {
             return;
         }
         const error = ensureError(ev);
+<<<<<<< 345baa1d29a9027634fb099463f14b2601b63086
         if (ev.type === "unhandledrejection" && error.name === "AbortError") {
             return ev.preventDefault();
         }
+||||||| 7999d6281e9bc55ee8788bca318f7dadab0320bb
+=======
+        if (!isInstanceOf(ev, Event)) {
+            ev = new ErrorEvent("error", { error });
+        }
+>>>>>>> a84884bc689791b78c10b42fbc7b4357b2699ebd
         if (handledErrors.has(error)) {
             // Already handled
             return ev.preventDefault();
         }
         handledErrors.add(error);
-
-        if (!isInstanceOf(ev, Event)) {
-            ev = new ErrorEvent("error", { error });
-        }
 
         mockPreventDefault(ev);
 
