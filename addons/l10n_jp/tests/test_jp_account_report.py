@@ -1,5 +1,9 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import re
+
+import lxml.html
+
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.tests import tagged
 from odoo.tools import html2plaintext
@@ -41,7 +45,7 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertIn('様', text)
         self.assertIn('Unit Price (円)', text)
         self.assertIn('Amount (円)', text)
-        self.assertIn('対象額', text)
+        self.assertIn('Taxable Amount', text)
 
     def test_currency_code_can_be_left_out_of_the_headers(self):
         self.company_data['company'].l10n_jp_display_currency_code = False
@@ -78,6 +82,31 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertIn('(円)', html2plaintext(wizard.preview))
         wizard.l10n_jp_display_currency_code = False
         self.assertNotIn('(円)', html2plaintext(wizard.preview))
+
+    def test_every_tax_rate_shows_its_base_and_its_tax(self):
+        # Two rates on two lines give the groups different bases, which core
+        # prints as "X on base" rather than as the bare group.
+        tax_8 = self.tax_sale_a.copy({
+            'name': '8%',
+            'amount': 8.0,
+            'tax_group_id': self.env['account.chart.template'].ref('l10n_jp_tax_group_8').id,
+        })
+        invoice = self._create_invoice(
+            move_type='out_invoice',
+            partner_id=self.partner_a.id,
+            currency_id=self.env.ref('base.JPY').id,
+            invoice_line_ids=[
+                self._prepare_invoice_line(price_unit=10000, tax_ids=self.tax_sale_a),
+                self._prepare_invoice_line(price_unit=5000, tax_ids=tax_8),
+            ],
+            post=True,
+        )
+        html = self.env['ir.actions.report'].sudo()._render_qweb_html('account.report_invoice_with_payments', invoice.ids)[0]
+        text = html2plaintext(html)
+
+        # One row per rate, core's own row left out.
+        self.assertEqual(len(lxml.html.fromstring(html).find_class('o_taxes')), 2)
+        self.assertCountEqual(re.findall(r'Taxable Amount\s+¥\s*([\d,]+)', text), ['10,000', '5,000'])
 
     def test_payment_receipt_uses_jp_honorific(self):
         payment = self.init_payment(100.0, partner=self.partner_a, post=True)
