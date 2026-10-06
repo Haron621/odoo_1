@@ -1,8 +1,9 @@
 import { expect, test } from "@odoo/hoot";
 import { click } from "@odoo/hoot-dom";
 import { setupInteractionWhiteList, startInteractions } from "@web/../tests/public/helpers";
-import { contains, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { contains } from "@web/../tests/web_test_helpers";
 import { browser } from "@web/core/browser/browser";
+import { patch } from "@web/core/utils/patch";
 
 setupInteractionWhiteList("website.whatsapp");
 
@@ -37,7 +38,7 @@ function getWhatsappSnippet(dataWhatsappNumber = "") {
 }
 
 test("Drop Whatsapp snippet and verify redirection to company number", async () => {
-    patchWithCleanup(browser, {
+    patch(browser, {
         open: (url) => {
             expect.step(`open ${url}`);
         },
