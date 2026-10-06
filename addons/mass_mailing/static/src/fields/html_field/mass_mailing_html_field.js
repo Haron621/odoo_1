@@ -330,6 +330,10 @@ export class MassMailingHtmlField extends HtmlField {
     }
 
     onChange() {
+        if (!this.props.record.resId) {
+            // The mailing has been deleted
+            return;
+        }
         // Ensure that a change in the edited field will reset the validity
         // of the inlineField (since it is most likely invisible and not
         // editable directly by the user).
