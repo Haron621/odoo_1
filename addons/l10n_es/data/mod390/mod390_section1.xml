@@ -1202,9 +1202,9 @@
                             <field name="expression_ids">
                                 <record id="mod_390_casilla_29_balance" model="account.report.expression">
                                     <field name="label">balance</field>
-                                    <field name="engine">aggregation</field>
-                                    <field name="formula">aeat_mod_303_14.balance</field>
-                                    <field name="subformula">cross_report(l10n_es.mod_303)</field>
+                                    <field name="engine">external</field>
+                                    <field name="formula">sum</field>
+                                    <field name="subformula">editable;rounding=2</field>
                                 </record>
                             </field>
                         </record>
@@ -1215,9 +1215,9 @@
                             <field name="expression_ids">
                                 <record id="mod_390_casilla_30_balance" model="account.report.expression">
                                     <field name="label">balance</field>
-                                    <field name="engine">aggregation</field>
-                                    <field name="formula">aeat_mod_303_15.balance</field>
-                                    <field name="subformula">cross_report(l10n_es.mod_303)</field>
+                                    <field name="engine">external</field>
+                                    <field name="formula">sum</field>
+                                    <field name="subformula">editable;rounding=2</field>
                                 </record>
                             </field>
                         </record>
@@ -1465,9 +1465,9 @@
                             <field name="expression_ids">
                                 <record id="mod_390_casilla_43_balance" model="account.report.expression">
                                     <field name="label">balance</field>
-                                    <field name="engine">aggregation</field>
-                                    <field name="formula">aeat_mod_303_25.balance</field>
-                                    <field name="subformula">cross_report(l10n_es.mod_303)</field>
+                                    <field name="engine">external</field>
+                                    <field name="formula">sum</field>
+                                    <field name="subformula">editable;rounding=2</field>
                                 </record>
                             </field>
                         </record>
@@ -1478,9 +1478,9 @@
                             <field name="expression_ids">
                                 <record id="mod_390_casilla_44_balance" model="account.report.expression">
                                     <field name="label">balance</field>
-                                    <field name="engine">aggregation</field>
-                                    <field name="formula">aeat_mod_303_26.balance</field>
-                                    <field name="subformula">cross_report(l10n_es.mod_303)</field>
+                                    <field name="engine">external</field>
+                                    <field name="formula">sum</field>
+                                    <field name="subformula">editable;rounding=2</field>
                                 </record>
                             </field>
                         </record>
