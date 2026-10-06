@@ -40,7 +40,18 @@ Note:
         'data/account_report_jct_deduction_schedule_4_3.xml',
         'data/account_report_jct_deduction_schedule_5_3.xml',
         'data/account_report_jct_return.xml',
+        'data/report_paperformat.xml',
+        'data/res_country_data.xml',
+        'report/jp_report.xml',
+        'report/jp_account_report.xml',
+        'data/report_layout.xml',
+        'views/base_document_layout_views.xml',
     ],
+    'assets': {
+        'web.report_assets_common': [
+            'l10n_jp/static/src/css/report_jp_standard.css',
+        ],
+    },
     'demo': [
         'demo/demo_company.xml',
     ],
