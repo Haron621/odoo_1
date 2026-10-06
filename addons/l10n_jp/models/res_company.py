@@ -5,11 +5,11 @@ from odoo import fields, models
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
-    l10n_jp_display_currency_code = fields.Boolean(
-        string="Display Currency Code",
+    l10n_jp_currency_in_headers = fields.Boolean(
+        string="Currency in Headers",
         default=True,
-        help="Name the currency in the price column headers of the Japanese Business layout: "
-             "the yen by its name in the document's language (円 in Japanese), any other currency by its code (USD, CNY, ...).",
+        help="Add the currency to the Unit Price and Amount column headers of the Japanese Business layout, "
+             "e.g. Amount (円) or Amount (USD).",
     )
 
     def _l10n_jp_hide_zero_decimals(self, amounts):

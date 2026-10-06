@@ -47,8 +47,8 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertIn('Amount (円)', text)
         self.assertIn('Taxable Amount', text)
 
-    def test_currency_code_can_be_left_out_of_the_headers(self):
-        self.company_data['company'].l10n_jp_display_currency_code = False
+    def test_currency_can_be_left_out_of_the_headers(self):
+        self.company_data['company'].l10n_jp_currency_in_headers = False
         invoice = self._create_invoice_one_line(
             move_type='out_invoice',
             partner_id=self.partner_a,
@@ -63,24 +63,24 @@ class TestJPAccountReport(AccountTestInvoicingCommon):
         self.assertIn('Unit Price', text)
         self.assertNotIn('(円)', text)
 
-    def test_document_layout_saves_the_currency_code_choice(self):
+    def test_document_layout_saves_the_header_currency_choice(self):
         company = self.company_data['company']
         wizard = self.env['base.document.layout'].with_context(account_document_layout_configurator=True).create({
             'company_id': company.id,
             'report_layout_id': self.env.ref('l10n_jp.report_layout_jp_standard').id,
         })
         self.assertTrue(wizard.l10n_jp_is_jp_layout)
-        wizard.l10n_jp_display_currency_code = False
-        self.assertFalse(company.l10n_jp_display_currency_code)
+        wizard.l10n_jp_currency_in_headers = False
+        self.assertFalse(company.l10n_jp_currency_in_headers)
 
-    def test_document_layout_preview_follows_the_currency_code_choice(self):
+    def test_document_layout_preview_follows_the_header_currency_choice(self):
         # The preview speaks the language of the user configuring it.
         wizard = self.env['base.document.layout'].with_context(lang='ja_JP').create({
             'company_id': self.company_data['company'].id,
             'report_layout_id': self.env.ref('l10n_jp.report_layout_jp_standard').id,
         })
         self.assertIn('(円)', html2plaintext(wizard.preview))
-        wizard.l10n_jp_display_currency_code = False
+        wizard.l10n_jp_currency_in_headers = False
         self.assertNotIn('(円)', html2plaintext(wizard.preview))
 
     def test_every_tax_rate_shows_its_base_and_its_tax(self):

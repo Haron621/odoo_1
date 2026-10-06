@@ -47,7 +47,7 @@
                    t-value="' (%s)' % (jp_preview_currency.currency_unit_label if jp_preview_currency.name == 'JPY' else jp_preview_currency.name)
                             if jp_preview_currency
                             and company.external_report_layout_id.key == 'l10n_jp.external_layout_jp_standard'
-                            and company.l10n_jp_display_currency_code
+                            and company.l10n_jp_currency_in_headers
                             else ''"/>
             </xpath>
             <xpath expr="//th[@name='th_priceunit']/span" position="inside">
