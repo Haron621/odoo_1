@@ -621,7 +621,14 @@ export class Composer extends Component {
         const { loading, searchTerm, results } = this.suggestion.search;
         const props = {
             anchorRef: this.inputContainerRef,
+<<<<<<< 84c58b53d95de3311cd7c5763da41364332b8264
             position: this.ancestors.inChatter ? "bottom-fit" : "top-fit",
+||||||| 32ff77c75c6a928da3657ba9b6a0c573d455f549
+            position: this.env.inChatter ? "bottom-fit" : "top-fit",
+=======
+            position: this.env.inChatter ? "bottom-fit" : "top-fit",
+            onClose: () => this.suggestion.dismiss(),
+>>>>>>> 0e519bc66442d90dae9c7a7ad59682ed129de918
             onSelect: (ev, option) => {
                 this.suggestion.insert(option);
                 markEventHandled(ev, "composer.selectSuggestion");
