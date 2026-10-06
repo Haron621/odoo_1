@@ -146,9 +146,15 @@ class AttachmentController(ThreadController):
                 message_attachments.sudo()._unlink_from_thread_and_notify(message)
                 continue
             thread = request.env[message.model].browse(message.res_id)
+<<<<<<< 345baa1d29a9027634fb099463f14b2601b63086
             thread._message_update_content(message, body=message.body)  # marks the message edited
             # sudo: ir.attachment: access is validated with _has_attachments_ownership
             message_attachments.sudo()._delete_and_notify(message)
+||||||| 1d227133a5d8a02153fd8a334103388b045a029b
+            thread._message_update_content(message, body=message.body)  # marks the message edited
+=======
+            thread._message_update_content(message, body=message.body, strict=False)  # marks the message edited
+>>>>>>> fbe9517f3e110e671305424c35d2a27f5f84c2c7
         # sudo: ir.attachment: access is validated with _has_attachments_ownership
         orphans.sudo()._delete_and_notify()
         return {"kept_attachment_ids": posted.ids if keep_on_messages else []}
