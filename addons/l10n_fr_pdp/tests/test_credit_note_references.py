@@ -76,19 +76,38 @@ class TestCreditNoteReferences(TestL10nFrPdpCommon):
         self.assertIsNone(tree.find('./{*}BillingReference'))
 
     def test_reject_incomplete_or_conflicting_standalone_reference(self):
-        credit_note = self._create_french_invoice(
-            move_type='out_refund',
-            x_studio_peppol_contract_document_reference_id='AMBIGUOUS',
-            x_studio_peppol_invoice_previous_date='2020-04-15',
-            x_studio_peppol_invoice_period_start_date='2024-01-01',
-            x_studio_peppol_invoice_period_end_date='2024-12-31',
-        )
+        credit_note = self._create_french_invoice(move_type='out_refund')
         builder = self.env['account.edi.xml.ubl_21_fr']
-        vals = builder._export_invoice_vals(credit_note)
+        combinations = (
+            ({}, True),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE'}, True),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE',
+              'x_studio_peppol_invoice_period_start_date': '2024-01-01'}, True),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE',
+              'x_studio_peppol_invoice_period_end_date': '2024-12-31'}, True),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE',
+              'x_studio_peppol_invoice_previous_date': '2020-04-15'}, False),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE',
+              'x_studio_peppol_invoice_period_start_date': '2024-01-01',
+              'x_studio_peppol_invoice_period_end_date': '2024-12-31'}, False),
+            ({'x_studio_peppol_contract_document_reference_id': 'REFERENCE',
+              'x_studio_peppol_invoice_previous_date': '2020-04-15',
+              'x_studio_peppol_invoice_period_start_date': '2024-01-01',
+              'x_studio_peppol_invoice_period_end_date': '2024-12-31'}, True),
+        )
 
-        constraints = builder._export_invoice_constraints(credit_note, vals)
-
-        self.assertIn('ubl_21_fr_refund_invoice_reference', constraints)
+        for values, should_fail in combinations:
+            with self.subTest(values=values):
+                credit_note.write({
+                    'x_studio_peppol_contract_document_reference_id': False,
+                    'x_studio_peppol_invoice_previous_date': False,
+                    'x_studio_peppol_invoice_period_start_date': False,
+                    'x_studio_peppol_invoice_period_end_date': False,
+                    **values,
+                })
+                vals = builder._export_invoice_vals(credit_note)
+                constraints = builder._export_invoice_constraints(credit_note, vals)
+                self.assertEqual('ubl_21_fr_refund_invoice_reference' in constraints, should_fail)
 
     def test_flow_10_maps_global_discount_to_credit_note(self):
         credit_note = self._create_standalone_credit_note(
@@ -100,12 +119,114 @@ class TestCreditNoteReferences(TestL10nFrPdpCommon):
         invoice_node = {}
 
         builder._invoice_add_referenced_documents(invoice_node, credit_note)
+        flow = self.env['l10n.fr.pdp.reports.flow'].new({
+            'period_start': '2025-02-01',
+            'period_end': '2025-02-28',
+        })
+        builder._invoice_add_invoice_period(invoice_node, credit_note, flow)
 
         self.assertEqual(builder._get_move_typecode(credit_note), '381')
         self.assertEqual(invoice_node['ReferencedDocument'], [{
             'ID': {'_text': 'REBATE-2024'},
             'IssueDate': {'_text': '20240101'},
         }])
+        self.assertEqual(invoice_node['InvoicePeriod'], {
+            'StartDate': {'_text': '20240101'},
+            'EndDate': {'_text': '20241231'},
+        })
+
+    def test_flow_10_historical_and_linked_credit_notes(self):
+        builder = self.env['pdp.flow.10.xml.builder']
+        historical = self._create_standalone_credit_note(
+            x_studio_peppol_contract_document_reference_id='PAPER-2020-0042',
+            x_studio_peppol_invoice_previous_date='2020-04-15',
+        )
+        invoice_node = {}
+        builder._invoice_add_referenced_documents(invoice_node, historical)
+        self.assertEqual(invoice_node['ReferencedDocument'], [{
+            'ID': {'_text': 'PAPER-2020-0042'},
+            'IssueDate': {'_text': '20200415'},
+        }])
+
+        original = self._create_french_invoice(date='2017-02-01')
+        original.action_post()
+        linked = original._reverse_moves([{'date': '2017-02-02', 'invoice_date': '2017-02-02'}])
+        linked.action_post()
+        linked.write({
+            'x_studio_peppol_contract_document_reference_id': 'UNRELATED',
+            'x_studio_peppol_invoice_period_start_date': '2024-01-01',
+            'x_studio_peppol_invoice_period_end_date': '2024-12-31',
+        })
+        xml, errors = self.env['account.edi.xml.ubl_21_fr']._export_invoice(linked)
+        tree = etree.fromstring(xml)
+        self.assertFalse(errors)
+        self.assertEqual(tree.findtext('./{*}CreditNoteTypeCode'), '381')
+        self.assertEqual(tree.findtext('./{*}BillingReference/{*}InvoiceDocumentReference/{*}ID'), original.name)
+
+        invoice_node = {}
+        builder._invoice_add_referenced_documents(invoice_node, linked)
+        self.assertEqual(invoice_node['ReferencedDocument'], [{
+            'ID': {'_text': original.name},
+            'IssueDate': {'_text': '20170101'},
+        }])
+
+    def test_vendor_credit_note_reference_is_only_required_in_flow_10(self):
+        credit_note = self._create_french_invoice(
+            move_type='in_refund',
+            partner_id=self.partner_b.id,
+        )
+        credit_note.action_post()
+        self.assertFalse(credit_note._get_l10n_fr_pdp_errors())
+
+        credit_note.l10n_fr_pdp_flow_10_operation_type = 'purchase'
+        credit_note.l10n_fr_pdp_flow_10_report_type = 'transaction'
+        self.assertTrue(any(
+            'x_studio_peppol_invoice_previous_date' in error
+            for error in credit_note._get_l10n_fr_pdp_errors()
+        ))
+
+    def test_flow_10_rejects_invalid_global_discount_period(self):
+        credit_note = self._create_standalone_credit_note(
+            partner_id=self.partner_b.id,
+            x_studio_peppol_contract_document_reference_id='REBATE-2024',
+            x_studio_peppol_invoice_period_start_date='2024-01-01',
+            x_studio_peppol_invoice_period_end_date='2024-01-01',
+        )
+        credit_note.l10n_fr_pdp_flow_10_operation_type = 'sale'
+        credit_note.l10n_fr_pdp_flow_10_report_type = 'transaction'
+
+        for period_end, should_fail in (
+            ('2023-12-31', True),
+            ('2024-01-01', True),
+            ('2024-01-02', False),
+        ):
+            with self.subTest(period_end=period_end):
+                credit_note.x_studio_peppol_invoice_period_end_date = period_end
+                errors = credit_note._get_l10n_fr_pdp_errors()
+                self.assertEqual(
+                    any('invoice period end date must be after' in error for error in errors),
+                    should_fail,
+                )
+
+        credit_note.x_studio_peppol_invoice_period_start_date = '1999-01-01'
+        self.assertTrue(any(
+            'invoice period dates must be between 2000 and 2099' in error
+            for error in credit_note._get_l10n_fr_pdp_errors()
+        ))
+
+    def test_flow_10_rejects_invalid_studio_reference(self):
+        credit_note = self._create_standalone_credit_note(
+            partner_id=self.partner_b.id,
+            x_studio_peppol_contract_document_reference_id='PAPER.INVALID',
+            x_studio_peppol_invoice_previous_date='1999-04-15',
+        )
+        credit_note.l10n_fr_pdp_flow_10_operation_type = 'sale'
+        credit_note.l10n_fr_pdp_flow_10_report_type = 'transaction'
+
+        errors = credit_note._get_l10n_fr_pdp_errors()
+
+        self.assertTrue(any('previous document reference' in error for error in errors))
+        self.assertTrue(any('previous invoice date must be between 2000 and 2099' in error for error in errors))
 
     def test_import_ubl_credit_note_references(self):
         builder = self.env['account.edi.xml.ubl_21_fr']
@@ -130,6 +251,30 @@ class TestCreditNoteReferences(TestL10nFrPdpCommon):
             'x_studio_peppol_invoice_previous_date': False,
             'x_studio_peppol_invoice_period_start_date': fields.Date.to_date('2024-01-01'),
             'x_studio_peppol_invoice_period_end_date': fields.Date.to_date('2024-12-31'),
+        }])
+
+    def test_import_ubl_historical_credit_note(self):
+        credit_note = self._create_french_invoice(move_type='in_refund')
+        tree = etree.fromstring(b'''\
+            <CreditNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2"
+                        xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+                        xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+                <cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>
+                <cac:ContractDocumentReference><cbc:ID>CONTRACT-OTHER</cbc:ID></cac:ContractDocumentReference>
+                <cac:BillingReference>
+                    <cac:InvoiceDocumentReference>
+                        <cbc:ID>PAPER-2020-0042</cbc:ID>
+                        <cbc:IssueDate>2020-04-15</cbc:IssueDate>
+                    </cac:InvoiceDocumentReference>
+                </cac:BillingReference>
+            </CreditNote>
+        ''')
+
+        self.env['account.edi.xml.ubl_21_fr']._import_fill_invoice_form(credit_note, tree, 1)
+
+        self.assertRecordValues(credit_note, [{
+            'x_studio_peppol_contract_document_reference_id': 'PAPER-2020-0042',
+            'x_studio_peppol_invoice_previous_date': fields.Date.to_date('2020-04-15'),
         }])
 
     def test_import_facturx_credit_note_references(self):
@@ -200,3 +345,16 @@ class TestCreditNoteReferences(TestL10nFrPdpCommon):
             'x_studio_peppol_invoice_period_start_date': fields.Date.to_date('2024-01-01'),
             'x_studio_peppol_invoice_period_end_date': fields.Date.to_date('2024-12-31'),
         }])
+
+
+@tagged('post_install_l10n', 'post_install', '-at_install')
+class TestCreditNoteReferencesWithoutStudio(TestL10nFrPdpCommon):
+
+    def test_export_without_studio_fields_reports_missing_reference(self):
+        self.assertNotIn('x_studio_peppol_contract_document_reference_id', self.env['account.move']._fields)
+        credit_note = self._create_french_invoice(move_type='out_refund')
+        credit_note.action_post()
+
+        _xml, errors = self.env['account.edi.xml.ubl_21_fr']._export_invoice(credit_note)
+
+        self.assertTrue(any('x_studio_peppol_invoice_previous_date' in error for error in errors))

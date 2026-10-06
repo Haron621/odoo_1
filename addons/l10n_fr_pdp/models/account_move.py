@@ -16,6 +16,7 @@ from odoo.addons.l10n_fr_pdp.utils import drom_com_territories
 
 PAID_CODES = frozenset({'ESC', 'RAB', 'REM', 'MPA', 'MEN'})
 G1_05_RE = re.compile(r'^(?! )(?!.*  )[A-Za-z0-9+\-_/ ]{1,20}(?<! )$')  # can't start with space, can't have 2 consecutive spaces, max 20 chars, allowed chars are alphanumeric, space, -, _, /, can't end with space
+G1_05_REFERENCE_RE = re.compile(r'^(?! )(?!.*  )[A-Za-z0-9+\-_/ ]{1,35}(?<! )$')
 VALID_PDP_TAX_RATES = {0, 0.9, 1.05, 1.75, 2.1, 5.5, 7, 8.5, 9.2, 9.6, 10, 13, 19.6, 20, 20.6}
 PDP_TRACKED_FIELDS = {
     'l10n_fr_pdp_last_flow_id',
@@ -570,8 +571,21 @@ class AccountMove(models.Model):
             return []
 
         def check():
-            if reference_error := self._l10n_fr_pdp_get_credit_note_reference_error():
+            if transaction_type == 'b2bi' and (reference_error := self._l10n_fr_pdp_get_credit_note_reference_error()):
                 yield reference_error
+
+            if transaction_type == 'b2bi' and self.move_type in ('out_refund', 'in_refund') and not self.reversed_entry_id:
+                reference_data = self._l10n_fr_pdp_get_credit_note_reference_data()
+                if reference_data['type'] != 'invalid' and not G1_05_REFERENCE_RE.fullmatch(reference_data['reference']):
+                    yield _("The previous document reference does not meet the Flow 10 format requirements.")
+                if reference_data['type'] == 'historical' and not 2000 <= reference_data['invoice_previous_date'].year <= 2099:
+                    yield _("The previous invoice date must be between 2000 and 2099 for Flow 10.")
+                if reference_data['type'] == 'global_discount' and not all(
+                    2000 <= reference_data[field_name].year <= 2099 for field_name in ('period_start', 'period_end')
+                ):
+                    yield _("The global discount invoice period dates must be between 2000 and 2099 for Flow 10.")
+                if reference_data['type'] == 'global_discount' and reference_data['period_end'] <= reference_data['period_start']:
+                    yield _("The global discount invoice period end date must be after its start date.")
 
             if not self.company_id.partner_id._l10n_fr_pdp_get_siren():
                 yield _("The company SIREN is missing or invalid.")
