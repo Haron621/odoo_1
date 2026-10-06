@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates>
+    <t t-name="website.TeamBoardOption">
+        <BuilderRow label.translate="Card Density">
+            <BuilderButtonGroup>
+                <BuilderButton classAction="'s_team_board_comfortable'">Comfortable</BuilderButton>
+                <BuilderButton classAction="'s_team_board_compact'">Compact</BuilderButton>
+            </BuilderButtonGroup>
+        </BuilderRow>
+        <BuilderRow label.translate="Card Layout">
+            <BuilderSelect>
+                <BuilderSelectItem classAction="'s_team_board_grid'">Grid</BuilderSelectItem>
+                <BuilderSelectItem classAction="'s_team_board_list'">List</BuilderSelectItem>
+            </BuilderSelect>
+        </BuilderRow>
+
+        <BuilderRow label.translate="Member">
+            <BuilderButton action="'addItem'" actionParam="'.s_team_board_member:last-child'" preview="false">Add Member</BuilderButton>
+        </BuilderRow>
+        <BuilderRow label.translate="Sort">
+            <BuilderButton action="'sortTeamBoardMembers'" preview="false">Sort A-Z</BuilderButton>
+        </BuilderRow>
+    </t>
+
+    <t t-inherit="website.BuilderOptions" t-inherit-mode="extension">
+        <xpath expr="//t[@id='snippet_specific_options']" position="after">
+            <team_board_option
+                template="website.TeamBoardOption"
+                selector=".s_team_board"/>
+        </xpath>
+    </t>
+</templates>
