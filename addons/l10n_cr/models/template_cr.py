@@ -1,4 +1,3 @@
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import models
 
 from odoo.addons.account.models.chart_template import template
@@ -42,12 +41,49 @@ class AccountChartTemplate(models.AbstractModel):
                 'deferred_expense_account_id': 'account_account_template_141004',
                 'deferred_revenue_account_id': 'account_account_template_214002',
                 'downpayment_account_id': 'account_account_template_211007',
+                'account_cash_basis_base_account_id': 'account_account_template_911001',
             },
         }
 
     @template('cr', 'account.account')
     def _get_cr_account_account(self):
         return {
+            'account_account_template_122001': {
+                'asset_depreciation_account_id': 'account_account_template_131001',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122002': {
+                'asset_depreciation_account_id': 'account_account_template_131002',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122301': {
+                'asset_depreciation_account_id': 'account_account_template_133001',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122302': {
+                'asset_depreciation_account_id': 'account_account_template_133002',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122303': {
+                'asset_depreciation_account_id': 'account_account_template_133003',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122304': {
+                'asset_depreciation_account_id': 'account_account_template_133004',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_122305': {
+                'asset_depreciation_account_id': 'account_account_template_133005',
+                'asset_expense_account_id': 'account_account_template_533014',
+            },
+            'account_account_template_151001': {
+                'asset_depreciation_account_id': 'account_account_template_151003',
+                'asset_expense_account_id': 'account_account_template_533015',
+            },
+            'account_account_template_151002': {
+                'asset_depreciation_account_id': 'account_account_template_151003',
+                'asset_expense_account_id': 'account_account_template_533015',
+            },
             'account_account_template_113101': {
                 'account_stock_expense_id': 'account_account_template_511001',
                 'account_stock_variation_id': 'account_account_template_511007',

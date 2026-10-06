@@ -6,7 +6,7 @@
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
-            <field name="street2" position="after">
+            <field name="zip" position="after">
                 <field name="l10n_cr_district_id"
                        placeholder="District..."
                        class="o_address_street"

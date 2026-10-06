@@ -1,10 +1,6 @@
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models
-from odoo.tools.partner_identifiers import COMPANY_CATEGORIES
 
-from odoo.addons.l10n_cr.tools.partner_identifiers import (
-    CR_ADDITIONAL_IDENTIFIERS_METADATA,
-)
+from odoo.addons.l10n_cr.tools.partner_identifiers import CR_ADDITIONAL_IDENTIFIERS_METADATA
 
 
 class ResPartner(models.Model):
@@ -17,14 +13,12 @@ class ResPartner(models.Model):
     )
     l10n_cr_district_name = fields.Char(string='District Name', related='l10n_cr_district_id.name')
 
-    @api.depends('additional_identifiers')
+    @api.depends('additional_identifiers', 'country_code')
     def _compute_is_company(self):
-        company_keys = {
-            key for key, metadata in CR_ADDITIONAL_IDENTIFIERS_METADATA.items()
-            if metadata['category'] in COMPANY_CATEGORIES
-        }
         cr_companies = self.filtered(
-            lambda p: p.commercial_partner_id == p and company_keys & set(p.additional_identifiers or {}),
+            lambda p: p.country_code == 'CR'
+            and p.commercial_partner_id == p
+            and any(p._is_company_identifier(key) for key in p.additional_identifiers or {}),
         )
         cr_companies.is_company = True
         super(ResPartner, self - cr_companies)._compute_is_company()
@@ -35,9 +29,19 @@ class ResPartner(models.Model):
             self.city_id = self.l10n_cr_district_id.city_id
 
     @api.onchange('city_id')
-    def _onchange_l10n_cr_city_id(self):
+    def _onchange_city_id(self):
+        # Clearing the cantón after a province change must keep that province
+        if self.country_code == 'CR' and not self.city_id:
+            self.city = False
+        else:
+            super()._onchange_city_id()
         if self.l10n_cr_district_id and self.l10n_cr_district_id.city_id != self.city_id:
             self.l10n_cr_district_id = False
+
+    @api.onchange('state_id')
+    def _onchange_l10n_cr_state_id(self):
+        if self.country_code == 'CR' and self.city_id and self.city_id.state_id != self.state_id:
+            self.city_id = False
 
     @api.model
     def _address_fields(self):

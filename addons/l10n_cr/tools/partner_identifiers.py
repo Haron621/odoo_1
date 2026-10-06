@@ -1,4 +1,3 @@
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
 from stdnum.cr import cpf as cr_cpf
 from stdnum.cr import cr as cr_cr
 

@@ -1,4 +1,3 @@
-# Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
     'name': 'Costa Rica - Accounting',
     'icon': '/account/static/description/l10n.png',
@@ -32,14 +31,15 @@ Base localization module for Costa Rica. Electronic invoicing is delivered separ
     ],
     'auto_install': ['account'],
     'data': [
-        'views/res_city_views.xml',
-        'views/res_city_district_views.xml',
-        'views/res_company_views.xml',
-        'views/portal_address_templates.xml',
+        'views/res_partner_views.xml',
         'data/res_country_data.xml',
         'data/l10n_latam.document.type.csv',
         'data/res.city.csv',
         'data/l10n_cr.res.city.district.csv',
+        'views/portal_address_templates.xml',
+        'views/res_city_views.xml',
+        'views/res_city_district_views.xml',
+        'views/res_company_views.xml',
         'security/ir.access.csv',
     ],
     'assets': {

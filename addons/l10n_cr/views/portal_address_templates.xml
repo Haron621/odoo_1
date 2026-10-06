@@ -6,7 +6,7 @@
             <div
                 id="div_l10n_cr_district"
                 class="col-lg-6 mb-3"
-                t-att-style="(country.code != 'CR' or not city) and 'display:none;'"
+                t-att-style="country.code != 'CR' and 'display:none;'"
             >
                 <label class="col-form-label" for="l10n_cr_district_id">District</label>
                 <select
@@ -18,11 +18,13 @@
                 >
                     <option value="">District...</option>
                     <option
-                        t-foreach="city_districts"
+                        t-foreach="l10n_cr_city_districts"
                         t-as="district"
-                        t-att-value="district.id"
-                        t-att-selected="district.id == partner_sudo.l10n_cr_district_id.id"
-                        t-out="district.name"
+                        t-att-value="district['id']"
+                        t-att-data-city-id="district['cityId']"
+                        t-att-data-state-id="district['stateId']"
+                        t-att-selected="district['id'] == partner_sudo.l10n_cr_district_id.id"
+                        t-out="district['name']"
                     />
                 </select>
             </div>
