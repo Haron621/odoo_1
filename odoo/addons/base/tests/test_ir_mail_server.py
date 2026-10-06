@@ -136,6 +136,28 @@ class TestIrMailServer(TransactionCase, MockSmtplibCase):
                     body_alternative = body_alternative.strip('\n')
             self.assertEqual(body_alternative, expected)
 
+    def test_list_unsubscribe_unfolded(self):
+        """Ensure List-Unsubscribe header remains unfolded on a single line when sent on the wire."""
+        fake_smtp = _FakeSMTP()
+        msg = email.message.EmailMessage(policy=email.policy.SMTP)
+        msg['From'] = 'joe@example.com'
+        msg['To'] = 'joe@example.com'
+
+        # Generate a List-Unsubscribe URL longer than the standard 78-character line limit
+        long_token = "a" * 100
+        unsubscribe_url = f"<https://www.example.com/unsubscribe?token={long_token}>"
+        msg['List-Unsubscribe'] = unsubscribe_url
+
+        msg_on_the_wire = self._send_email(msg, fake_smtp)
+
+        # Verify that the header appears completely on a single continuous line with CRLF
+        expected_header = f"List-Unsubscribe: {unsubscribe_url}\r\n"
+        self.assertIn(
+            expected_header,
+            msg_on_the_wire,
+            "The List-Unsubscribe header was folded across multiple lines on the wire."
+        )
+
     @users('admin')
     def test_mail_server_get_test_email_from(self):
         """ Test the email used to test the mail server connection. Check
