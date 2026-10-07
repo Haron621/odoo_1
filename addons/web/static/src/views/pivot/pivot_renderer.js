@@ -7,6 +7,7 @@ import { localization } from "@web/core/l10n/localization";
 import { _t } from "@web/core/l10n/translation";
 import { download } from "@web/core/network/download";
 import { usePopover } from "@web/core/popover/popover_hook";
+import { evaluateBooleanExpr } from "@web/core/py_js/py";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
 import { sortBy } from "@web/core/utils/arrays";
@@ -350,5 +351,28 @@ export class PivotRenderer extends Component {
 
         const group = { rowValues: cell.groupId[0], colValues: cell.groupId[1] };
         this.openView(this.model.getGroupDomain(group), this.views, context, newWindow);
+    }
+
+    /**
+     * Evaluates field decorations and returns an object of CSS classes
+     * @param {Object} cell
+     * @returns {Object}
+     */
+    getCellDecorationClasses(cell) {
+        const classes = {};
+        if (cell.value === undefined) {
+            return classes;
+        }
+
+        // There are cases where the fieldAttrs[cell.measure] is undefined, whether the measure
+        // was added from the "Measures" dropdown or it's a built-in measure like __count thus
+        // we added the '?' guard and the '|| []' fallback
+        const decorations = this.model.metaData.fieldAttrs[cell.measure]?.decorations || [];
+        const context = { [cell.measure]: cell.value };
+
+        for (const { class: cssClass, condition } of decorations) {
+            classes[cssClass] = evaluateBooleanExpr(condition, context);
+        }
+        return classes;
     }
 }
