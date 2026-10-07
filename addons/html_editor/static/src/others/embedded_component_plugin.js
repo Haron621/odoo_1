@@ -337,6 +337,12 @@ export class EmbeddedComponentPlugin extends Plugin {
     }
 
     preProcessSanitizedElem(elem) {
+        const hosts = elem?.querySelectorAll?.(`[data-embedded]`) || [];
+        for (const host of hosts) {
+            if (!this.getEmbedding(host)) {
+                host.remove();
+            }
+        }
         if (elem?.nodeType !== Node.ELEMENT_NODE) {
             return elem;
         }
