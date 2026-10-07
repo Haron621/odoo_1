@@ -31,6 +31,7 @@
                        domain="[
                            ('state', '=', 'purchase'),
                            ('partner_id', 'child_of', parent.partner_id),
+                           ('product_qty', '!=', 0),
                            '|', '|',
                            ('id', '=', purchase_line_id),
                            ('qty_to_invoice_raw', '!=', 0),
