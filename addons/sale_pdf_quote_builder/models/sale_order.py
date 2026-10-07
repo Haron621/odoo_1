@@ -24,7 +24,7 @@ class SaleOrder(models.Model):
         compute="_compute_is_pdf_quote_builder_available"
     )
     quotation_document_ids = fields.Many2many(
-        string="Headers/Footers",
+        string="Additional Pages",
         comodel_name="quotation.document",
         default=_default_quotation_document_ids,
         readonly=False,
@@ -131,7 +131,7 @@ class SaleOrder(models.Model):
         ]
         return {
             "headers": {
-                "name": self.env._("Header"),
+                "name": self.env._("Before"),
                 "files": [
                     {
                         "id": header.id,
@@ -156,7 +156,7 @@ class SaleOrder(models.Model):
             },
             "lines": lines_params,
             "footers": {
-                "name": self.env._("Footer"),
+                "name": self.env._("After"),
                 "files": [
                     {
                         "id": footer.id,
