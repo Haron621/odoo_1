@@ -1,0 +1,37 @@
+.o_field_icon_selector {
+    gap: var(--o-bs-spacer-2);
+    min-width: 0;
+    cursor: pointer;
+
+    .o_field_icon_selector_input {
+        min-width: 0;
+        color: inherit;
+        cursor: pointer;
+        outline: none;
+    }
+}
+
+.o_field_icon_selector_icon {
+    flex: 0 0 auto;
+}
+
+.o_field_icon_selector_menu {
+    width: 100%;
+    max-height: 350px;
+    overflow-y: auto;
+
+    .o_we_file_selector_control_panel {
+        background-color: var(--o-bs-popover-bg);
+        padding-top: var(--o-bs-spacer-2);
+        padding-bottom: var(--o-bs-spacer-2);
+
+        > div {
+            max-width: none !important;
+        }
+    }
+
+    .font-icons-icon {
+        padding: 0.5rem !important;
+        margin: 0.25rem !important;
+    }
+}
