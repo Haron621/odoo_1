@@ -50,14 +50,22 @@ class StockMove(models.Model):
     def _compute_description_picking(self):
         super()._compute_description_picking()
         for move in self:
-            if move.purchase_line_id:
+            if move.purchase_line_id and not move.description_picking_manual:
                 current_description = move.description_picking
+                product = move.product_id.with_context(lang=move._get_lang())
+                has_receipt_description = bool(product._get_picking_description(move.picking_type_id))
+                if not has_receipt_description:
+                    current_description = '\n'.join(
+                        line for line in current_description.split('\n')
+                        if line not in {product.display_name, product.name}
+                    )
                 seller = move.purchase_line_id.sudo().selected_seller_id
                 vendor_reference = f'[{seller.product_code}]' if seller.product_code else ''
                 vendor_reference += f' {seller.product_name}' if seller.product_name else ''
                 if current_description and vendor_reference.strip() in current_description:
                     vendor_reference = ''
                 no_variant_attributes = '\n'.join(f'{attribute.attribute_id.name}: {attribute.name}' for attribute in move.purchase_line_id.sudo().product_no_variant_attribute_value_ids)
+<<<<<<< 5e9830c583f27fcf0758c2339f80e7cb1f385f7e
                 move.description_picking = (no_variant_attributes + '\n' + vendor_reference + '\n' + (current_description or '')).strip()
 
     def write(self, vals):
@@ -65,6 +73,13 @@ class StockMove(models.Model):
         if vals.get('date') and vals.get('state') != "done":
             self._set_date_planned(vals.get('date'))
         return res
+||||||| c80fe0970ee747e2d323545af134a6ab94efac5d
+                move.description_picking = (no_variant_attributes + '\n' + vendor_reference + '\n' + current_description).strip()
+=======
+                if no_variant_attributes and no_variant_attributes.strip() in current_description:
+                    no_variant_attributes = ''
+                move.description_picking = '\n'.join(part for part in (no_variant_attributes, vendor_reference, current_description) if part).strip()
+>>>>>>> 88ca3df91ee8fd7e02b5a9da24e517a0334b33f5
 
     def _get_description(self):
         return self.purchase_line_id.name if self.purchase_line_id else super()._get_description()
