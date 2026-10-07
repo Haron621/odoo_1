@@ -54,7 +54,7 @@
     align-self: stretch;
 
     &:hover {
-        background-color: color-mix(in srgb, var(--white) 10%, transparent);
+        background-color: color-mix(in srgb, var(--o-white) 10%, transparent);
     }
 }
 
