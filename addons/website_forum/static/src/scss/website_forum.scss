@@ -316,9 +316,22 @@ $-forum-sidebar-width: map-get($container-max-widths, sm) / 2;
 .o_wforum_background_gradient {
     background-image: linear-gradient(0deg, rgba($body-bg, .75) 30%, rgba($body-bg, 0) 100%);
 }
+<<<<<<< 2fab65e5d275cb212f1f18e11e18664f5c336f70
 
 .o_website_forum_follow_answers {
     .js_follow_btn, .js_unfollow_btn, .follow_btn {
         opacity: 1 !important;
     }
 }
+||||||| 9ec0530afd37c93f828021546fadd9a83a6aa136
+=======
+
+.forum_intro.o_wforum_intro_closing {
+    height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+    transition: height .4s ease-in-out, padding .4s ease-in-out, opacity .4s ease-in-out;
+}
+>>>>>>> 1af9dc73f7d0912d953048cfe215f904b2dcc0ed
