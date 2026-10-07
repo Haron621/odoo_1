@@ -2093,13 +2093,37 @@ class Website(models.CachedModel):
         fuzzy_term = False
         search_details = self._search_get_details(search_type, order, options)
         if search and options.get('allowFuzzy', True):
+<<<<<<< 12ba2b8866d93398eb9853e12eb44bb37a48d785
             fuzzy_term = self._search_find_fuzzy_term(search_details, search)
             if fuzzy_term:
                 if fuzzy_term.lower() != search.lower():
                     search = fuzzy_term
                 else:
+||||||| a78f5f25b07cf623b6a0fe7faf0c49c35d9166fc
+            fuzzy_term = self._search_find_fuzzy_term(search_details, search)
+            if fuzzy_term:
+                count, results = self._search_exact(search_details, fuzzy_term, limit, order)
+                if fuzzy_term.lower() == search.lower():
+=======
+            count, results = self._search_exact(search_details, search, limit, order)
+            if not count:
+                fuzzy_term = self._search_find_fuzzy_term(search_details, search)
+                if fuzzy_term and fuzzy_term.lower() != search.lower():
+                    count, results = self._search_exact(search_details, fuzzy_term, limit, order)
+                else:
+>>>>>>> 154d82a9834cdf627906da8361fe6aba06fc943c
                     fuzzy_term = False
+<<<<<<< 12ba2b8866d93398eb9853e12eb44bb37a48d785
         count, results = self._search_exact(search_details, search, offset, limit, order)
+||||||| a78f5f25b07cf623b6a0fe7faf0c49c35d9166fc
+            else:
+                count, results = self._search_exact(search_details, search, limit, order)
+        else:
+            count, results = self._search_exact(search_details, search, limit, order)
+=======
+        else:
+            count, results = self._search_exact(search_details, search, limit, order)
+>>>>>>> 154d82a9834cdf627906da8361fe6aba06fc943c
         return count, results, fuzzy_term
 
     def _search_exact(self, search_details, search, offset, limit, order):
