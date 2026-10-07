@@ -3,32 +3,27 @@
 from dateutil.relativedelta import relativedelta
 
 import odoo
-from odoo import fields
+from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 
-from odoo.addons.point_of_sale.tests.common import TestPoSCommon
+from odoo.addons.point_of_sale.tests.common import CommonPosTest
 
 
 @odoo.tests.tagged('post_install', '-at_install')
-class TestPoSBasicConfig(TestPoSCommon):
+class TestPoSBasicConfig(CommonPosTest):
     """ Test PoS with basic configuration
 
     The tests contain base scenarios in using pos.
     More specialized cases are tested in other tests.
     """
-    _test_user_groups = None  # FIXME list needed groups
-
-    def setUp(self):
-        super(TestPoSBasicConfig, self).setUp()
-        self.config = self.basic_config
-        self.product0 = self.create_product('Product 0', self.categ_basic, 0.0, 0.0)
-        self.product1 = self.create_product('Product 1', self.categ_basic, 10.0, 5)
-        self.product2 = self.create_product('Product 2', self.categ_basic, 20.0, 10)
-        self.product3 = self.create_product('Product 3', self.categ_basic, 30.0, 15)
-        self.product4 = self.create_product('Product_4', self.categ_basic, 9.96, 4.98)
-        self.product99 = self.create_product('Product_99', self.categ_basic, 99, 50)
-        self.product_multi_tax = self.create_product('Multi-tax product', self.categ_basic, 100, 100, (self.taxes['tax8'] | self.taxes['tax9']).ids)
-        self.company_data_2 = self.setup_other_company()
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.config = cls.pos_config_usd
+        cls.product0 = cls.create_product('Product 0', cls.categ_basic, 0.0, 0.0)
+        cls.product1 = cls.create_product('Product 1', cls.categ_basic, 10.0, 5)
+        cls.product2 = cls.create_product('Product 2', cls.categ_basic, 20.0, 10)
+        cls.product4 = cls.create_product('Product_4', cls.categ_basic, 9.96, 4.98)
 
     def test_pos_session_name_sequencing(self):
         """ This test check if the session name is correctly set according to the sequence """
@@ -41,7 +36,7 @@ class TestPoSBasicConfig(TestPoSCommon):
         self.open_new_session(0)
         self.assertEqual(self.pos_session.name, name + '/01000')
 
-        self.pos_session.close_session_from_ui()
+        self.close_pos_session()
 
         sequence.prefix = 'TEST/'
 
@@ -55,9 +50,9 @@ class TestPoSBasicConfig(TestPoSCommon):
 
         - When there are partners that belong to different company
         """
-
+        company_data_2 = self.setup_other_company()
         # create a partner that belongs to different company
-        company2 = self.company_data_2['company']
+        company2 = company_data_2['company']
         self.env['res.partner'].create({
             'name': 'Test',
             'company_id': company2.id,
@@ -175,8 +170,8 @@ class TestPoSBasicConfig(TestPoSCommon):
             - Copy multiple payment methods
             - Check the duplicated cash payment method journal should be empty
         """
-        pm_1 = self.cash_pm1
-        pm_2 = self.bank_pm1
+        pm_1 = self.cash_pm
+        pm_2 = self.bank_pm
         pm_3, pm_4 = (pm_1 + pm_2).copy()
 
         self.assertTrue(pm_3)
@@ -187,23 +182,12 @@ class TestPoSBasicConfig(TestPoSCommon):
     def test_single_config_global_invoice(self):
         """For a single POS config, create multiple orders and consolidate them into a single invoice"""
         self.open_new_session()
-        # create orders
-        orders = []
-        orders.append(self.create_ui_order_data(
-            [(self.product1, 2), (self.product4, 3)],
-            payments=[(self.bank_pm1, 49.88)]
-        ))
-        orders.append(self.create_ui_order_data(
-            [(self.product4, 1), (self.product2, 5)],
-            payments=[(self.bank_pm1, 109.96)]
-        ))
-
-        # sync orders
-        self.env['pos.order'].sync_from_ui(orders)
-        # close the session
-        self.pos_session.close_session_from_ui()
-
-        pos_orders = self.env['pos.order'].search([])
+        orders = self.create_orders([
+            {'lines': [[self.product1, 2], [self.product4, 3]], 'payments': [[self.bank_pm, 49.88]]},
+            {'lines': [[self.product4, 1], [self.product2, 5]], 'payments': [[self.bank_pm, 109.96]]},
+        ])
+        self.close_pos_session()
+        pos_orders = sum(orders.values(), self.env['pos.order'])
         # set customer for the orders
         pos_orders.write({'partner_id': self.customer.id})
 
@@ -224,33 +208,20 @@ class TestPoSBasicConfig(TestPoSCommon):
 
     def test_multi_config_global_invoice(self):
         self.open_new_session()
-        orders = []
-        orders.append(self.create_ui_order_data(
-            [(self.product1, 3), (self.product2, 10)],
-            payments=[(self.bank_pm1, 230)]
-        ))
-        orders.append(self.create_ui_order_data(
-            [(self.product1, 5), (self.product0, 10)],
-            payments=[(self.bank_pm1, 50)]
-        ))
-        self.env['pos.order'].sync_from_ui(orders)
-        self.pos_session.close_session_from_ui()
+        orders = self.create_orders([
+            {'lines': [[self.product1, 3], [self.product2, 10]], 'payments': [[self.bank_pm, 230]]},
+            {'lines': [[self.product1, 5], [self.product0, 10]], 'payments': [[self.bank_pm, 50]]},
+        ])
+        self.close_pos_session()
 
-        # open new session & create orders
+        # Open a second session and create orders.
         self.open_new_session()
-        orders2 = []
-        orders2.append(self.create_ui_order_data(
-            [(self.product1, 2), (self.product4, 3)],
-            payments=[(self.bank_pm1, 49.88)]
-        ))
-        orders2.append(self.create_ui_order_data(
-            [(self.product4, 1), (self.product2, 5)],
-            payments=[(self.bank_pm1, 109.96)]
-        ))
-        self.env['pos.order'].sync_from_ui(orders2)
-        self.pos_session.close_session_from_ui()
-
-        pos_orders = self.env['pos.order'].search([])
+        orders2 = self.create_orders([
+            {'lines': [[self.product1, 2], [self.product4, 3]], 'payments': [[self.bank_pm, 49.88]]},
+            {'lines': [[self.product4, 1], [self.product2, 5]], 'payments': [[self.bank_pm, 109.96]]},
+        ])
+        self.close_pos_session()
+        pos_orders = sum((*orders.values(), *orders2.values()), self.env['pos.order'])
         # set customer for the orders
         pos_orders.write({'partner_id': self.customer.id})
 
@@ -348,40 +319,23 @@ class TestPoSBasicConfig(TestPoSCommon):
         but some legacy records of this kind may still exist.
         This test ensures that the refunded_order_id is correctly computed in such cases.
         """
-        current_session = self.open_new_session()
-        orders = list(self._create_orders([
-            {'pos_order_lines_ui_args': [(self.product1, 1)]},
-            {'pos_order_lines_ui_args': [(self.product2, 1)]}
+        self.open_new_session()
+        orders = list(self.create_orders([
+            {'lines': [[self.product1]], 'payments': [[self.bank_pm, 10]]},
+            {'lines': [[self.product2]], 'payments': [[self.bank_pm, 20]]},
         ]).values())
 
-        refund_order = self.env['pos.order'].create({
-            'company_id': self.env.company.id,
-            'session_id': current_session.id,
-            'lines': [
-                (0, 0, {
-                    'product_id': self.product1.id,
-                    'price_unit': -10,
-                    'qty': 1,
-                    'tax_ids': [[6, False, []]],
-                    'price_subtotal': -10,
-                    'price_subtotal_incl': -10,
-                    'refunded_orderline_id': orders[0].lines[0].id
-                }),
-                (0, 0, {
-                    'product_id': self.product2.id,
-                    'price_unit': -10,
-                    'qty': 1,
-                    'tax_ids': [[6, False, []]],
-                    'price_subtotal': -10,
-                    'price_subtotal_incl': -10,
-                    'refunded_orderline_id': orders[1].lines[0].id
-                })
+        # Create the legacy record through the ORM: sync_from_ui rejects refunds
+        # containing lines from multiple original orders.
+        refund_data = self._create_ui_order_data(
+            [
+                [self.product1, 1, 0, {'price_unit': -10, 'refunded_orderline_id': orders[0].lines.id}],
+                [self.product2, 1, 0, {'price_unit': -10, 'refunded_orderline_id': orders[1].lines.id}],
             ],
-            'amount_paid': -10,
-            'amount_total': -10,
-            'amount_tax': 0.0,
-            'amount_return': 0.0,
-        })
+            payments=[],
+            state='draft',
+        )
+        refund_order = self.env['pos.order'].create(refund_data)
 
         self.assertEqual(refund_order.refunded_order_id, orders[0])
 
@@ -398,7 +352,7 @@ class TestPoSBasicConfig(TestPoSCommon):
             'name': 'Test PM',
             'type': 'cash',
             'journal_id': test_journal.id,
-            'receivable_account_id': self.cash_pm1.receivable_account_id.id,
+            'receivable_account_id': self.cash_pm.receivable_account_id.id,
         })
 
         with self.assertRaises(ValidationError):
@@ -433,16 +387,15 @@ class TestPoSBasicConfig(TestPoSCommon):
             'group_ids': [self.env.ref('point_of_sale.group_pos_manager').id],
         })
 
-        orders = self._create_orders([{
-            'pos_order_lines_ui_args': [(self.product1, 1)],
-            'customer': self.customer,
-            'is_invoiced': False,
-        }])
-        orders = sum(orders.values(), self.env['pos.order'])
+        order = self.create_pos_order(
+            [[self.product1]],
+            payments=[[self.bank_pm, 10]],
+            customer=self.customer,
+        )
 
-        orders.with_user(pos_only_user)._generate_pos_order_invoice()
+        order.with_user(pos_only_user)._generate_pos_order_invoice()
 
-        self.assertEqual(orders.account_move.review_state, 'no_review')
+        self.assertEqual(order.account_move.review_state, 'no_review')
 
     def test_delete_archive_product_pos_category_with_active_pos_session(self):
         self.env['pos.session'].search([('state', '!=', 'closed')]).state = "closed"
@@ -456,8 +409,8 @@ class TestPoSBasicConfig(TestPoSCommon):
         product2.pos_categ_ids = [(6, 0, [category2.id])]
 
         # Open unrestricted session -> everything protected.
-        self.basic_config.open_ui()
-        self.basic_config.iface_available_categ_ids = []
+        self.pos_config_usd.open_ui()
+        self.pos_config_usd.iface_available_categ_ids = []
 
         with self.assertRaisesRegex(UserError, "active Point of Sale session"):
             product2.action_archive()
@@ -466,7 +419,7 @@ class TestPoSBasicConfig(TestPoSCommon):
             category2.unlink()
 
         # Open restricted session for category1 only.
-        self.basic_config.iface_available_categ_ids = [(6, 0, [category1.id])]
+        self.pos_config_usd.iface_available_categ_ids = [(6, 0, [category1.id])]
 
         # category1/product1 still protected.
         with self.assertRaisesRegex(UserError, "active Point of Sale session"):
@@ -483,7 +436,63 @@ class TestPoSBasicConfig(TestPoSCommon):
         category2.unlink()
 
         # After session close, only config protection remains.
-        self.basic_config.current_session_id.state = 'closed'
+        self.pos_config_usd.current_session_id.state = 'closed'
 
         with self.assertRaisesRegex(UserError, "currently in use in a point of sale"):
             category1.unlink()
+
+    def test_properly_set_pos_config_x2many_fields(self):
+        """Simulate what is done from the res.config.settings view when editing x2 many fields."""
+        self._remove_on_payment_taxes()
+        pos_config = self.env['pos.config'].create({
+            'name': 'Shop 1',
+            'module_pos_restaurant': False,
+            'payment_method_ids': [
+                Command.create({
+                    'name': 'Bank 1',
+                    'receivable_account_id': self.env.company.account_default_pos_receivable_account_id.id,
+                    'type': 'bank',
+                    'company_id': self.env.company.id,
+                }),
+                Command.create({
+                    'name': 'Bank 2',
+                    'receivable_account_id': self.env.company.account_default_pos_receivable_account_id.id,
+                    'type': 'bank',
+                    'company_id': self.env.company.id,
+                }),
+                Command.create({
+                    'name': 'Cash',
+                    'receivable_account_id': self.env.company.account_default_pos_receivable_account_id.id,
+                    'type': 'cash',
+                    'company_id': self.env.company.id,
+                })
+            ]
+        })
+
+        # Manually simulate the unlinking of the second record and then save the settings.
+        # It will be a set of link commands except the one we want to delete.
+        linked_ids = pos_config.payment_method_ids.ids
+        second_id = linked_ids[1]
+        commands = [Command.link(id) for id in linked_ids if id != second_id]
+
+        pos_config.with_context(from_settings_view=True).write({
+            'payment_method_ids': commands
+        })
+
+        self.assertTrue(second_id not in pos_config.payment_method_ids.ids)
+        self.assertTrue(len(pos_config.payment_method_ids) == 2)
+
+    def test_write_default_and_available_presets_on_multiple_pos_configs(self):
+        preset = self.env['pos.preset'].create({'name': 'Preset 1'})
+
+        pos_config1 = self.env['pos.config'].create({'name': 'Shop 1', 'module_pos_restaurant': False})
+        pos_config2 = self.env['pos.config'].create({'name': 'Shop 2', 'module_pos_restaurant': False})
+        pos_config3 = self.env['pos.config'].create({'name': 'Shop 3', 'module_pos_restaurant': False})
+
+        pos_configs = pos_config1 | pos_config2 | pos_config3
+
+        pos_configs.write({
+            'use_presets': True,
+            'available_preset_ids': [(6, 0, [preset.id])],
+            'default_preset_id': preset.id,
+        })

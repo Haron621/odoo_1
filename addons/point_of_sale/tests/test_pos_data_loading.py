@@ -9,13 +9,9 @@ from odoo.addons.point_of_sale.tests.common import CommonPosTest
 class TestPosDataLoading(CommonPosTest):
     # Tests for the POS data loading architecture.
 
-    def _get_session(self):
-        self.pos_config_usd.open_ui()
-        return self.pos_config_usd.current_session_id
-
     def test_load_data_response_structure(self):
         """load_data() must return fields, relations, dependencies and records for every model."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data()
 
         self.assertTrue(data, "load_data() should return a non-empty dict")
@@ -31,7 +27,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_pos_session_and_config_present(self):
         """pos.session and pos.config must always be present in the response."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data()
 
         self.assertIn('pos.session', data)
@@ -43,7 +39,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_relations_contain_relational_fields(self):
         """Relations metadata must include many2one/one2many/many2many field entries."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data()
 
         product_relations = data['product.product']['relations']
@@ -55,7 +51,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_relations_many2one_has_ondelete(self):
         """Many2one relation entries should carry the ondelete attribute when set."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data()
 
         # product.template.categ_id is many2one with ondelete defined
@@ -72,7 +68,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_only_records_flat_structure(self):
         """only_records=True must return a flat {model: [list]} dict without metadata."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data({'only_records': True})
 
         self.assertTrue(data)
@@ -81,7 +77,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_only_records_contains_session(self):
         """only_records=True must still include pos.session and pos.config records."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data({'only_records': True})
 
         self.assertIn('pos.session', data)
@@ -95,7 +91,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_write_date_always_present(self):
         """write_date must be included in every loaded record for every model (except ir.ui.view)."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data({'only_records': True})
 
         for model_name, records in data.items():
@@ -112,7 +108,7 @@ class TestPosDataLoading(CommonPosTest):
     def test_load_data_models_filter_limits_records(self):
         """Passing 'models' should return records only for the requested models;
         other models are present with empty records."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data({'models': ['product.product']})
 
         # Requested model should have records
@@ -129,7 +125,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_incremental_skips_up_to_date_records(self):
         """Records whose local timestamp is in the future should not be returned except PosConfig."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         full_data = session.load_data({'only_records': True})
         config_records = full_data['pos.config']
         self.assertTrue(config_records)
@@ -163,7 +159,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_incremental_returns_outdated_records(self):
         """Records with a local timestamp of 0 (never synced) must always be returned."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         full_data = session.load_data({'only_records': True})
         config_id = full_data['pos.config'][0]['id']
 
@@ -184,7 +180,7 @@ class TestPosDataLoading(CommonPosTest):
         category = self.env['pos.category'].create({'name': 'Temp Category'})
         deleted_id = category.id
         category.unlink()
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
 
         data = session.load_data({
             'records': {'pos.category': {str(deleted_id): 0}},
@@ -195,7 +191,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_to_remove_deactivated_record(self):
         """Deactivated (active=False) record IDs should also appear in to_remove."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
 
         product = self.env['product.template'].create([{
             'name': 'Active product',
@@ -213,7 +209,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_active_record_not_in_to_remove(self):
         """Active, existing records must NOT appear in to_remove."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         full_data = session.load_data({'only_records': True})
         config_id = full_data['pos.config'][0]['id']
 
@@ -230,7 +226,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_filter_local_data_returns_nonexistent_ids(self):
         """filter_local_data should return IDs that don't exist in the DB."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         fake_id = 999999999
 
         result = session.filter_local_data({'pos.category': [str(fake_id)]})
@@ -240,7 +236,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_filter_local_data_does_not_return_existing_ids(self):
         """filter_local_data should not return IDs that exist and are active."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         full_data = session.load_data({'only_records': True})
         config_id = full_data['pos.config'][0]['id']
 
@@ -253,7 +249,7 @@ class TestPosDataLoading(CommonPosTest):
         """filter_local_data should not crash on a model that no longer exists (e.g. its
         module was uninstalled since the client last synced), and should treat all of its
         locally cached IDs as stale."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
 
         result = session.filter_local_data({'this.model.does.not.exist': ['1', '2']})
 
@@ -266,7 +262,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_search_params_limit(self):
         """search_params limit should cap the number of records returned."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
         data = session.load_data({
             'models': ['product.product'],
             'search_params': {'product.product': {'limit': 1}},
@@ -278,7 +274,7 @@ class TestPosDataLoading(CommonPosTest):
 
     def test_load_data_search_params_offset_returns_different_records(self):
         """offset=0 and offset=1 with limit=1 should return different records."""
-        session = self._get_session()
+        session = self.open_new_session(config=self.pos_config_usd)
 
         page1 = session.load_data({
             'models': ['product.product'],

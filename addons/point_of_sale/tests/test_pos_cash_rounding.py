@@ -1,7 +1,11 @@
-from odoo import Command
-from odoo.addons.point_of_sale.tests.test_frontend import TestPointOfSaleHttpCommon
-from odoo.tests import tagged
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from odoo import Command
+from odoo.tests import tagged
+from odoo.addons.point_of_sale.tests.test_frontend import TestPointOfSaleHttpCommon
+
+
+# TODO-PARP: Move tests and remove File
 
 @tagged('post_install', '-at_install')
 class TestPosCashRounding(TestPointOfSaleHttpCommon):
@@ -12,14 +16,6 @@ class TestPosCashRounding(TestPointOfSaleHttpCommon):
     def setUpClass(cls):
         super().setUpClass()
         cls.partner_a.name = "AAAAAA"  # The POS only load the first 100 partners
-        cls.cash_rounding_add_invoice_line = cls.env['account.cash.rounding'].create({
-            'name': "cash_rounding_add_invoice_line",
-            'rounding': 0.05,
-            'rounding_method': 'HALF-UP',
-            'strategy': 'add_invoice_line',
-            'profit_account_id': cls.env.company.default_cash_difference_income_account_id.id,
-            'loss_account_id': cls.env.company.default_cash_difference_expense_account_id.id,
-        })
         cls.cash_rounding_biggest_tax = cls.env['account.cash.rounding'].create({
             'name': "cash_rounding_biggest_tax",
             'rounding': 0.05,
