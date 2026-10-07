@@ -1,4 +1,7 @@
 import { test, expect } from "@odoo/hoot";
+import { signal } from "@odoo/owl";
+import { animationFrame } from "@odoo/hoot-dom";
+import { patch } from "@web/core/utils/patch";
 import { mountWithCleanup } from "@web/../tests/web_test_helpers";
 import { setupPosEnv } from "@point_of_sale/../tests/unit/utils";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
@@ -8,7 +11,6 @@ import {
     deactivateAllProgramsExcept,
     addProductLineToOrder,
 } from "@pos_loyalty/../tests/unit/utils";
-import * as PosUiUtils from "@point_of_sale/../tests/unit/ui_utils";
 
 definePosModels();
 
@@ -38,19 +40,34 @@ test("getPotentialRewards", async () => {
     expect(rewards[0].reward.program_id).toEqual(loyaltyProgram);
 });
 
+test.tags("desktop");
 test("more button catches attention when rewards are available", async () => {
     const store = await setupPosEnv();
+    const canApplyRewards = signal(true);
+    patch(store.accessRight, {
+        get canApplyRewards() {
+            return canApplyRewards();
+        },
+    });
     const order = store.addNewOrder();
     const card = store.models["loyalty.card"].get(1);
+    deactivateAllProgramsExcept(store, [1]);
+    store.models["loyalty.program"].get(1).reward_ids = [1];
 
     await addProductLineToOrder(store, order);
-    order._code_activated_coupon_ids = [card];
-
     await mountWithCleanup(ProductScreen, { props: { orderUuid: order.uuid } });
-    const moreButtonSelector = PosUiUtils.isMobile() ? ".mobile-more-button" : ".more-btn";
-    if (PosUiUtils.isMobile()) {
-        PosUiUtils.ensurePane("left");
-    }
+
+    const moreButtonSelector = ".more-btn";
+    expect(moreButtonSelector).not.toHaveClass("o_catch_attention_reward");
+    expect(`${moreButtonSelector} .o_reward-star`).toHaveCount(0);
+
+    order.applied_codes = [card.code];
+    await animationFrame();
     expect(moreButtonSelector).toHaveClass("o_catch_attention_reward");
     expect(`${moreButtonSelector} .o_reward-star`).toHaveCount(1);
+
+    canApplyRewards.set(false);
+    await animationFrame();
+    expect(moreButtonSelector).not.toHaveClass("o_catch_attention_reward");
+    expect(`${moreButtonSelector} .o_reward-star`).toHaveCount(0);
 });
