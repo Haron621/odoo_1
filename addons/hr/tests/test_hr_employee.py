@@ -704,6 +704,29 @@ class TestHrEmployee(TestHrCommon):
         with self.assertRaises(ValidationError):
             no_email_emp.user_id = no_email_emp._get_or_create_light_user()
 
+    def test_user_autofill_on_email_onchange(self):
+        user = self.env['res.users'].create({
+            'name': 'Ada Lovelace',
+            'login': 'ada@example.com',
+            'email': 'ada@example.com',
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        with Form(self.env['hr.employee']) as form:
+            form.work_email = 'ada@example.com'
+            self.assertEqual(form.user_id, user, "Existing user should be auto-linked")
+            self.assertEqual(form.name, 'Ada Lovelace', "Employee name should be auto-filled from user")
+
+        new_test_user(self.env, login='portal_user', groups='base.group_portal', name='Portal User', email='portal@example.com')
+        with Form(self.env['hr.employee']) as form:
+            form.name = 'Portal Emp'
+            form.work_email = 'portal@example.com'
+            self.assertFalse(form.user_id, "Portal user should not be auto-linked")
+
+        with Form(self.env['hr.employee']) as form:
+            form.name = 'Duplicate Emp'
+            form.work_email = 'ada@example.com'
+            self.assertFalse(form.user_id, "User already linked to an employee should not be auto-linked")
+
     def test_user_contact_phone_sync(self):
         partner = self.env['res.partner'].create({'name': 'Partner Test'})
         first_company = self.env['res.company'].create({'name': 'First Company'})

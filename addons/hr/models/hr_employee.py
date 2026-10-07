@@ -1620,6 +1620,22 @@ class HrEmployee(models.Model):
         if not self.name:
             self.name = self.user_id.name
 
+    @api.onchange('work_email')
+    def _onchange_work_email(self):
+        if not self.user_id and self.work_email:
+            company = self.company_id or self.env.company
+            email = tools.email_normalize(self.work_email) or self.work_email
+            user = self.env['res.users'].sudo().search([
+                ('share', '=', False),
+                ('company_ids', 'in', company.id),
+                '|',
+                ('login', 'in', (self.work_email, email)),
+                ('email_normalized', '=', email),
+            ], limit=1)
+            if user and not user.with_context(active_test=False).employee_ids.filtered(lambda e: e.company_id == company):
+                self.user_id = user
+                self._onchange_user()
+
     @api.onchange('company_id')
     def _onchange_timezone(self):
         if self.company_id and not self.tz:
