@@ -221,26 +221,24 @@ class AccountPayment(models.Model):
         '''
         self.ensure_one()
 
-        # liquidity_lines, counterpart_lines, writeoff_lines
-        lines = [self.env['account.move.line'] for _dummy in range(3)]
-        valid_account_types = self._get_valid_payment_account_types()
-        for line in self.move_id.line_ids:
-            if line.account_id in self._get_valid_liquidity_accounts():
-                lines[0] += line  # liquidity_lines
-            elif line.account_id.account_type in valid_account_types or line.account_id == line.company_id.transfer_account_id:
-                lines[1] += line  # counterpart_lines
-            else:
-                lines[2] += line  # writeoff_lines
+        valid_account_types = set(self._get_valid_payment_account_types())
+        valid_liquidity_accounts = set(self._get_valid_liquidity_accounts())
+        EMPTY = self.env['account.move.line']
+        grouped = self.move_id.line_ids.grouped(lambda line:
+            'liquidity' if line.account_id in valid_liquidity_accounts else
+            'counterpart' if line.account_id.account_type in valid_account_types or line.account_id == line.company_id.transfer_account_id else
+            'writeoff'
+        )
 
         # In some case, there is no liquidity or counterpart line (after changing an outstanding account on the journal for example)
         # In that case, and if there is one writeoff line, we take this line and set it as liquidity/counterpart line
-        if len(lines[2]) == 1:
-            for i in (0, 1):
-                if not lines[i]:
-                    lines[i] = lines[2]
-                    lines[2] -= lines[2]
+        if len(grouped.get('writeoff', EMPTY)) == 1:
+            if 'liquidity' not in grouped:
+                grouped['liquidity'] = grouped.pop('writeoff', EMPTY)
+            if 'counterpart' not in grouped:
+                grouped['counterpart'] = grouped.pop('writeoff', EMPTY)
 
-        return lines
+        return grouped.get('writeoff', EMPTY), grouped.get('counterpart', EMPTY), grouped.get('writeoff', EMPTY)
 
     def _get_valid_liquidity_accounts(self):
         self.ensure_one()
