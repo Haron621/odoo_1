@@ -1,0 +1,25 @@
+// Panel made of removable option cards, e.g. text shadows or URL parameters.
+.o_popover_sliding_panel {
+    --o-popover-sliding-panel-bg: var(--#{$prefix}light);
+
+    background-color: var(--o-popover-sliding-panel-bg);
+    font-size: $o-we-font-size;
+
+    .o_popover_sliding_panel_card_add_btn {
+        border-style: dashed;
+
+        &, &:active {
+            border-color: rgba($body-color, 0.7);
+            background-color: transparent;
+        }
+    }
+
+    .o_popover_sliding_panel_card {
+        border-radius: $border-radius-sm;
+        background-color: rgba($body-color, 0.05);
+
+        .o_popover_sliding_panel_card_content {
+            border-right: $border-width solid var(--o-popover-sliding-panel-bg);
+        }
+    }
+}
