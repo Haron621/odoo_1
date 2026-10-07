@@ -544,6 +544,52 @@ class TestPurchase(AccountTestInvoicingCommon):
         self.assertEqual(product.seller_ids.partner_id, self.partner_a)
         self.assertEqual(product.seller_ids.company_id, company_a)
 
+    def test_price_include_price_exclude_with_multicompany(self):
+        """
+        Check that price tax included and price tax excluded are computed correctly in a multicompany context.
+        """
+        company_tax_excluded = self.company_data['company']
+        company_tax_included = self.company_data_2['company']
+        company_tax_included.account_price_include = 'tax_included'
+
+        product = self.env['product.product'].create({
+            'name': 'product_test',
+            'standard_price': 100.0,
+        })
+        product.with_company(company_tax_included).standard_price = 100.0
+
+        po_tax_included = self.env['purchase.order'].with_company(company_tax_included).create({
+            'partner_id': self.partner_a.id,
+            'order_line': [Command.create({
+                'product_id': product.id,
+                'product_qty': 1,
+                'uom_id': self.env.ref('uom.product_uom_unit').id,
+            })],
+        })
+        po_tax_included.button_confirm()
+
+        self.assertRecordValues(po_tax_included, [{
+            'amount_tax': 13.04,
+            'amount_untaxed': 86.96,
+            'amount_total': 100.00,
+        }])
+
+        po_tax_excluded = self.env['purchase.order'].with_company(company_tax_excluded).create({
+            'partner_id': self.partner_a.id,
+            'order_line': [Command.create({
+                'product_id': product.id,
+                'product_qty': 1,
+                'uom_id': self.env.ref('uom.product_uom_unit').id,
+            })],
+        })
+        po_tax_excluded.button_confirm()
+
+        self.assertRecordValues(po_tax_excluded, [{
+            'amount_tax': 15.00,
+            'amount_untaxed': 100.00,
+            'amount_total': 115.00,
+        }])
+
     def test_discount_po_line_vendorpricelist(self):
         """ Set a discount in VendorPriceList and check if that discount comes in po line and if vendor select
             a product which is not present in vendorPriceList then it should be created.
