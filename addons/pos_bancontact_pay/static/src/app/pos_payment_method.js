@@ -8,8 +8,8 @@ patch(PosPaymentMethod.prototype, {
             return super._checkOrder(...arguments);
         }
 
-        // Check amount
-        if (paymentline && paymentline.getAmount() <= 0) {
+        // Check amount (refund lines are negative)
+        if (paymentline && paymentline.getAmount() <= 0 && !paymentline.isBancontactRefund) {
             return {
                 status: false,
                 message: _t("The amount must be positive to use this payment method."),

@@ -10,8 +10,19 @@ patch(PosPayment.prototype, {
         return { ...base, frameLanguage };
     },
 
+    /**
+     * A refund line reverses an original Bancontact payment of the refunded order.
+     */
+    get isBancontactRefund() {
+        return (
+            this.payment_provider === "bancontact_pay" &&
+            Boolean(this.bancontact_refunded_payment_id)
+        );
+    },
+
     handlePaymentResponse(isPaymentSuccessful) {
-        if (this.payment_provider !== "bancontact_pay") {
+        // No webhook comes for a refund: the response of the request is the result.
+        if (this.payment_provider !== "bancontact_pay" || this.isBancontactRefund) {
             return super.handlePaymentResponse(...arguments);
         }
 

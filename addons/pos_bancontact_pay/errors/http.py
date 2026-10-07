@@ -44,3 +44,12 @@ HTTP_ERRORS = {
         AccessError,
     ),
 }
+
+
+REFUND_ERRORS = {
+    "INVALID_REFUND_AMOUNT": _lt("The refund amount is higher than the amount left to refund on this payment."),
+    "REFUND_NOT_ALLOWED": _lt("Refunds are not activated for this Bancontact product. Ask Bancontact support to activate them."),
+    "REFUND_NOT_POSSIBLE": _lt("This payment can't be refunded at the moment. Please try again later."),
+    "REFUND_REQUEST_CONFLICT": _lt("This refund was already sent to Bancontact with different details."),
+    "PAYMENT_FOR_REFUND_NOT_FOUND": _lt("Bancontact doesn't know the payment to refund."),
+}
