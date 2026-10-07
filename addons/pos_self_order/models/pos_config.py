@@ -188,6 +188,11 @@ class PosConfig(models.Model):
         res = super().write(vals)
         self._ensure_public_attachments()
         self._prepare_self_order_custom_btn()
+        # has_paper is written by the kiosk itself, reloading on it would loop
+        if vals.keys() - {'has_paper'}:
+            for config in self.filtered(lambda c: c.self_ordering_mode == 'kiosk' and c.has_active_session):
+                # reload kiosk to fetch new settings
+                config._notify('STATUS', {'status': 'open'})
         return res
 
     def _ensure_public_attachments(self):
