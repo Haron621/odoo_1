@@ -1,8 +1,15 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from datetime import datetime, UTC
 
+<<<<<<< 8145661e3f9fc67d2c73529c820519e5c297463b
 from odoo.tests import Form
 from odoo.tests.common import tagged, TransactionCase
+||||||| de3b22a609e6fd9815bd530569da20d6ec62bb16
+from odoo.tests import Form
+from odoo.tests.common import TransactionCase
+=======
+from odoo.tests import Form, TransactionCase
+>>>>>>> ab6d6380cd9faa552437a3330e4b575cfd6a5038
 
 
 @tagged('at_install', '-post_install')  # LEGACY at_install
@@ -259,3 +266,25 @@ class TestResourceCalendar(TransactionCase):
             {(9.0, 18.0)},
             "the working hours of the company calendar must be restored, not the default ones",
         )
+
+    def test_company_change_attendance_persistence(self):
+        """
+        Test to ensure that altering the company does not wipe the current schedule.
+        """
+        work_schedule = self.env['resource.calendar'].create({
+            'name': 'Test Work Schedule',
+            'company_id': False,
+            'attendance_ids': False
+        })
+        attendance_1 = self.env['resource.calendar.attendance'].create({
+            'name': 'Attendance 1',
+            'calendar_id': work_schedule.id,
+            'dayofweek': '1',
+            'hour_from': 8,
+            'hour_to': 17,
+        })
+        self.env.user.group_ids += self.env.ref('base.group_multi_company')
+        with Form(work_schedule) as form:
+            form.company_id = self.env.company
+
+        self.assertEqual(work_schedule.attendance_ids, attendance_1)
