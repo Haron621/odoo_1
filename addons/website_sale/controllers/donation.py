@@ -13,7 +13,7 @@ class WebsiteSaleDonation(http.Controller):
         if not donation_product:
             return {}
         # Unpublished, sudo to allow public users to read it
-        donation_product_sudo = donation_product.sudo()
+        donation_product_sudo = donation_product.sudo().with_context(active_test=False)
         return {
             "product_template_id": donation_product_sudo.id,
             "product_id": donation_product_sudo.product_variant_id.id,
