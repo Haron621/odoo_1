@@ -7,9 +7,19 @@
             <div class="mb-3">
                 <span t-attf-class="card-text #{this.value() ? '' : 'text-muted'}">
                     <textarea
+<<<<<<< 345baa1d29a9027634fb099463f14b2601b63086
                         t-ref="this.customFormFieldTextAreaRef"
                         t-model.lazy="this.value"
                         t-on-change="() => { this.props.onChange(this.value()) }"
+||||||| d1403379ee43b244a8df0e7c3d4ff807ab1d0a96
+                        t-custom-ref="customFieldCardTextArea"
+                        t-custom-model.lazy="this.props.value"
+                        t-on-change="(ev) => { this.props.onChange(this.props.value) }"
+=======
+                        t-custom-ref="customFieldCardTextArea"
+                        t-model.lazy="this.value"
+                        t-on-change="() => { this.props.onChange(this.value()) }"
+>>>>>>> 89802eac9be8709aea94e76f39763d996b34b06f
                         t-att-placeholder="!this.props.readonly &amp;&amp; this.placeholder"
                         t-att-readonly="this.props.readonly"
                         class="customFieldCardTextArea form-control overflow-y-hidden"
