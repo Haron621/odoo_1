@@ -170,6 +170,7 @@ class CalendarEvent(models.Model):
     calendar_id = fields.Many2one('calendar.calendar', string='Calendar', index='btree',
         compute='_compute_calendar_id', store=True, readonly=False, ondelete='cascade',
         domain=lambda self: self._get_calendar_id_domain())
+    calendar_owner = fields.Many2one(related='calendar_id.owner_id', readonly=True)
     calendar_color = fields.Integer(related='calendar_id.color')
     description = fields.Html('Description',
         help="""When synchronization with an external calendar is active, this description is synchronized \
@@ -258,8 +259,8 @@ class CalendarEvent(models.Model):
     current_status = fields.Selection(string="Attending?", related="current_attendee.state", readonly=False)
     should_show_status = fields.Boolean(compute="_compute_should_show_status")
     partner_ids = fields.Many2many(
-        'res.partner', 'calendar_event_res_partner_rel',
-        string='Attendees', default=_default_partners, falsy_value_label="Unassigned")
+        'res.partner', 'calendar_event_res_partner_rel', string='Attendees', default=_default_partners, 
+        falsy_value_label="Unassigned", domain=[('email', 'not ilike', '@resource.calendar.google.com')])
     invalid_email_partner_ids = fields.Many2many('res.partner', compute='_compute_invalid_email_partner_ids')
     unavailable_partner_ids = fields.Many2many('res.partner', string="Unavailable Attendees", compute='_compute_unavailable_partner_ids')
     # alarms
