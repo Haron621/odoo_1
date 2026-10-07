@@ -211,7 +211,7 @@ class TestPeppolParticipant(TransactionCase):
         }])
 
         wizard.write({
-            'contact_email': "turlututu@tsointsoin",
+            'contact_email': "turlututu@tsointsoin.com",
             'phone_number': "+3236656565",
             'peppol_eas': '0208',
             'peppol_endpoint': '0239843188',
@@ -227,8 +227,18 @@ class TestPeppolParticipant(TransactionCase):
 
         self.assertRecordValues(branch, [{
             'peppol_parent_company_id': False,
+<<<<<<< cb6a043f197594d3bea05283c2ceb766e4a53ddf
             'routing_identifier': '0208:0477472701',
             'account_peppol_contact_email': "turlututu@tsointsoin",
+||||||| 2f8f731c89b0440928fc22acbc64d960e41043cf
+            'peppol_eas': '0208',
+            'peppol_endpoint': '0477472701',
+            'account_peppol_contact_email': "turlututu@tsointsoin",
+=======
+            'peppol_eas': '0208',
+            'peppol_endpoint': '0477472701',
+            'account_peppol_contact_email': "turlututu@tsointsoin.com",
+>>>>>>> 471d3467d796e59279836bc3ca31f5060a674af5
             'account_peppol_phone_number': "+3236656565",
         }])
 
