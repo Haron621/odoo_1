@@ -1395,7 +1395,8 @@ class MailComposeMessage(models.TransientModel):
                 if self.template_id:
                     new_mail_message_values['email_add_signature'] = False
                 message_inmem = self.env['mail.message'].new(new_mail_message_values)
-                for _lang, render_values, recipients_group_data in record._notify_get_classified_recipients_iterator(
+                notify_record = record if hasattr(record, "_notify_get_classified_recipients_iterator") else record.env["mail.thread"]
+                for _lang, render_values, recipients_group_data in notify_record._notify_get_classified_recipients_iterator(
                     message_inmem,
                     [{
                         'active': True,
@@ -1414,7 +1415,7 @@ class MailComposeMessage(models.TransientModel):
                     model_description=False,  # force dynamic computation
                     force_email_lang=lang,
                 ):
-                    mail_body = record._notify_by_email_render_layout(
+                    mail_body = notify_record._notify_by_email_render_layout(
                         message_inmem,
                         recipients_group_data,
                         render_values={**render_values, 'email_notification_allow_header': self.email_notification_allow_header},
