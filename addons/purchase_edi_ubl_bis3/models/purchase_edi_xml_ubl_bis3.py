@@ -396,4 +396,13 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
         compatible with the `purchase.order.line` model."""
         line_vals = super()._retrieve_line_vals(record, tree, document_type, qty_factor)
         line_vals['product_qty'] = line_vals.pop('quantity')
+        if product_id := line_vals.get('product_id'):
+            # If the imported description matches the product's name, omit the `name`
+            # so the default product description is used instead of storing a redundant value.
+            product = self.env['product.product'].browse(product_id)
+            name = line_vals.get('name') or ''
+            if name == product.name:
+                line_vals.pop('name')
+            elif name.startswith(f"{product.name}\n"):
+                line_vals['name'] = name.removeprefix(f"{product.name}\n")
         return line_vals
