@@ -27,6 +27,7 @@ class Actions extends Component {
             t.object({
                 label: t.string(),
                 icon: t.string(),
+                iconClass: t.string().optional(),
                 onSelect: t.function([t.instanceOf(Event)]),
             })
         ),
@@ -89,6 +90,14 @@ export class AttachmentList extends Component {
         return url(attachment.urlRoute, {
             ...attachment.urlQueryParams,
         });
+    }
+
+    /**
+     * @param {import("models").Attachment} attachment
+     * @returns {Object.<string, boolean>}
+     */
+    getPreviewAttClass(attachment) {
+        return { o_image: true };
     }
 
     /**
@@ -204,7 +213,13 @@ export class AttachmentList extends Component {
                 onSelect: () => this.onClickUnlink(attachment, duplicates),
             });
         }
-        if (this.canDownload(attachment)) {
+        if (!attachment.isImage && attachment.type === "url") {
+            res.push({
+                label: _t("Open Link"),
+                icon: "open_in_new",
+                onSelect: () => window.open(attachment.url, "_blank"),
+            });
+        } else if (this.canDownload(attachment)) {
             res.push({
                 label: _t("Download"),
                 icon: "download",
