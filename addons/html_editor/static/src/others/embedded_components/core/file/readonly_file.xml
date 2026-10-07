@@ -18,7 +18,40 @@
                 </EmbeddedComponentToolbar>
             </span>
         </xpath>
-       
+ 
+        <xpath expr="//span[hasclass('alert-info')]" position="replace">
+            <t t-if="this.state.isPreviewInline and this.fileModel.isViewable">
+                <div class="o_form_pdf_controls d-flex gap-1">
+                    <button
+                        class="btn btn-secondary oi oi-filled o_select_file_button"
+                        data-icon="edit"
+                        data-tooltip="Edit"
+                        aria-label="Edit"
+                    />
+                    <button
+                        class="btn btn-secondary oi"
+                        data-icon="download"
+                        data-tooltip="Download"
+                        aria-label="Download"
+                        t-on-click="this.onFileDownload"
+                    />
+                    <button
+                        class="btn btn-secondary oi oi-filled o_clear_file_button"
+                        data-icon="delete"
+                        data-tooltip="Clear"
+                        aria-label="Clear"
+                        t-on-click="this.onFileRemove"
+                    />
+                </div>
+
+                <iframe class="o_pdfview_iframe o_file_preview_iframe"
+                    t-att-alt="this.fileModel.filename"
+                    t-att-src="this.fileModel.downloadUrl.replace('&amp;download=true', '')"
+                    t-att-name="this.fileModel.filename"
+                />
+            </t>
+            <t t-else="">$0</t>
+        </xpath>
     </t>
 
 </templates>
