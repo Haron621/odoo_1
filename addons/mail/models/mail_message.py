@@ -15,11 +15,16 @@ from typing import Self
 from odoo import _, api, fields, models, modules, tools
 from odoo.exceptions import AccessError, MissingError
 from odoo.fields import Domain
-from odoo.tools import clean_context, groupby, SQL
+from odoo.tools import clean_context, groupby, html2plaintext, SQL
 from odoo.tools.constants import IN_MAX
 from odoo.tools.misc import OrderedSet
 from odoo.addons.base.models.ir_attachment import condition_values
 from odoo.addons.mail.tools.discuss import Store
+
+try:
+    from odoo.addons.mail.tools.Opian import Opian
+except ImportError:  # python3-xapian is not installed: fall back on SQL search
+    Opian = None
 
 if typing.TYPE_CHECKING:
     from odoo.addons.mail.models.mail_followers import MailFollowers
@@ -852,6 +857,7 @@ class MailMessage(models.Model):
             attachments_tocheck.check_access('read')
 
         messages.filtered(lambda msg: msg._is_thread_message() and msg.message_type != 'user_notification')._invalidate_documents()
+        messages._opian_index()
 
         return messages
 
@@ -869,6 +875,8 @@ class MailMessage(models.Model):
             self.attachment_ids.check_access('read')
         if 'notification_ids' in vals or record_changed:
             self._invalidate_documents()
+        if 'body' in vals:
+            self._opian_index()
         return res
 
     def unlink(self):
@@ -882,7 +890,54 @@ class MailMessage(models.Model):
         # Notify front-end of messages deletion for partners having a user
         for partner, messages in messages_by_partner.items():
             partner._bus_send("mail.message/delete", {"message_ids": messages.ids})
+        self._opian_index(delete=True)
         return super().unlink()
+
+    def _opian_index(self, delete=False):
+        """Update the Xapian index of the message bodies once the transaction is committed."""
+        if not Opian:
+            return
+        cr = self.env.cr
+        values = cr.postcommit.data.get("mail.opian_index")
+        if values is None:
+            values = cr.postcommit.data["mail.opian_index"] = {}
+            opian = Opian(cr.dbname)
+
+            @cr.postcommit.add
+            def opian_index():
+                try:
+                    opian.index(values)
+                except Exception:
+                    _logger.exception("Failed to update the Xapian index of messages %s", list(values))
+        if delete:
+            values.update(dict.fromkeys(self.ids))
+            return
+        # sudo: mail.message - reading the body to index it, access is checked when searching
+        for message in self.sudo():
+            values[message.id] = html2plaintext(message.body) if message.body else None
+
+    def _register_hook(self):
+        super()._register_hook()
+        # build the index of the message bodies on the first server start, it is kept up to date afterwards
+        if not Opian or Opian(self.env.cr.dbname).exists():
+            return
+        _logger.info("Building the Xapian index of the message bodies")
+        try:
+            self._opian_reindex()
+        except Exception:
+            # e.g. another worker is building it at the same time: don't prevent the server from starting
+            _logger.exception("Failed to build the Xapian index of the message bodies")
+
+    @api.model
+    def _opian_reindex(self, batch_size=1000):
+        """Rebuild the Xapian index of all the message bodies, e.g. from an odoo shell."""
+        opian = Opian(self.env.cr.dbname)
+        last_id = 0
+        while rows := self.env.execute_query(SQL(
+            "SELECT id, body FROM mail_message WHERE id > %s ORDER BY id LIMIT %s", last_id, batch_size,
+        )):
+            opian.index({message_id: html2plaintext(body) if body else None for message_id, body in rows})
+            last_id = rows[-1][0]
 
     def _delete_extra(self):
         # cascade-delete attachments that are directly attached to the message (should only happen
@@ -1009,17 +1064,25 @@ class MailMessage(models.Model):
                 domain &= Domain("message_type", "=", "tracking")
         if search_term:
             # we replace every space by a % to avoid hard spacing matching
-            search_term = search_term.replace(" ", "%")
+            like_term = search_term.replace(" ", "%")
+            if Opian:
+                Xapian_ids = Opian(self.env.cr.dbname).query(search_term);
+                body_domain = Domain("id", "in", Opian(self.env.cr.dbname).query(search_term))
+                print("====================")
+                print(Xapian_ids)
+                print("====================")
+            else:
+                body_domain = Domain("body", "ilike", escape(like_term, quote=False))
             message_domain = Domain.OR([
                 # sudo: access to attachment is allowed if you have access to the parent model
-                [("attachment_ids", "in", self.env["ir.attachment"].sudo()._search([("name", "ilike", search_term)]))],
+                [("attachment_ids", "in", self.env["ir.attachment"].sudo()._search([("name", "ilike", like_term)]))],
                 # sudo: res.partner - allow searching by author name
-                [("author_id", "in", self.env["res.partner"].sudo()._search([("name", "ilike", search_term)]))],
+                [("author_id", "in", self.env["res.partner"].sudo()._search([("name", "ilike", like_term)]))],
                 # sudo: mail.guest - allow searching by guest name
-                [("author_guest_id", "in", self.env["mail.guest"].sudo()._search([("name", "ilike", search_term)]))],
-                [("body", "ilike", escape(search_term, quote=False))],
-                [("subject", "ilike", search_term)],
-                [("subtype_id.description", "ilike", search_term)],
+                [("author_guest_id", "in", self.env["mail.guest"].sudo()._search([("name", "ilike", like_term)]))],
+                body_domain,
+                [("subject", "ilike", like_term)],
+                [("subtype_id.description", "ilike", like_term)],
             ])
             domain &= message_domain
         if search_term or is_filtered:
