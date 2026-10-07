@@ -46,11 +46,10 @@ class WebsiteSaleVariantController(Controller):
             "taxes",
             "currency",
             "combination",
-            # Only used in Google Merchant Center logic, not client-side.
-            "discount_start_date",
-            "discount_end_date",
+            "pricelist_rule",
+            "untaxed_price",
         ):
-            combination_info.pop(key)
+            combination_info.pop(key, None)
 
         product = self.env["product.product"].browse(combination_info["product_id"])
         if product and product.id == product_id:
@@ -74,10 +73,7 @@ class WebsiteSaleVariantController(Controller):
         if self.env.website.is_view_active("website_sale.documents"):
             combination_info["documents"] = self.env.website._render_template(
                 "website_sale.documents",
-                values={
-                    "product": product_template,
-                    "product_variant": product,
-                },
+                values={"product": product_template, "product_variant": product},
             )
 
         if self.env.website.is_view_active("website_sale.product_tags"):
@@ -111,7 +107,8 @@ class WebsiteSaleVariantController(Controller):
         Used if the `is_thumbnail_visible` option is active on the attribute.
 
         :param int product_template_id: the `product.template` being displayed.
-        :param list combination: the `product.template.attribute.value` ids selected on the product template
+        :param list combination: the `product.template.attribute.value` ids selected on the product
+            template
         :return: A dictionary mapping attribute value IDs to their corresponding image URLs.
         """
         product_template = self.env["product.template"].browse(int(product_template_id))
