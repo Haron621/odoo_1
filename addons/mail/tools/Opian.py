@@ -6,6 +6,7 @@ import xapian
 
 from odoo.tools import config
 
+
 class Opian:
     termgenerator = xapian.TermGenerator()
     termgenerator.set_stemmer(xapian.Stem("en"))
@@ -15,13 +16,15 @@ class Opian:
         os.makedirs(self.dbpath, exist_ok=True)
         self.writableDb = xapian.WritableDatabase(self.dbpath, xapian.DB_CREATE_OR_OPEN)
 
-    def index(self, id, value):
+    def index(self, record_id, value):
         # index data into the database
+        id_term = f"Q{record_id}"
         doc = xapian.Document()
         self.termgenerator.set_document(doc)
         self.termgenerator.index_text(value)
-        doc.add_boolean_term(id)
-        self.writableDb.replace_document(id, doc)
+        doc.set_data(str(record_id))
+        doc.add_boolean_term(id_term)
+        self.writableDb.replace_document(id_term, doc)
 
     def query(self):
         # Query the database "somehow"
