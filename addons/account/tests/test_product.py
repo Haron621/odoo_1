@@ -61,6 +61,20 @@ class TestProduct(AccountTestInvoicingCommon):
             'supplier_taxes_id': self.company_data['company'].account_purchase_tax_id.ids,
         }])
 
+    def test_tax_default_tax_on_product(self):
+        """
+        Product tax fields should be empty if the company's default taxes have an incompatible type.
+        """
+        company = self.env.company
+        company.account_purchase_tax_id.type_tax_use = 'none'
+        company.account_sale_tax_id.type_tax_use = 'none'
+
+        product = self.env['product.template'].create({
+            'name': 'Demo Product',
+        })
+        self.assertFalse(product.taxes_id)
+        self.assertFalse(product.supplier_taxes_id)
+
     def test_product_tax_with_company_and_branch(self):
         """Ensure that setting a tax on a product overrides the default tax of branch companies.
             as branches share taxes with their parent company."""

@@ -80,14 +80,14 @@ class ProductTemplate(models.Model):
         string="Sales Taxes",
         help="Default taxes used when selling the product",
         domain=[('type_tax_use', '=', 'sale')],
-        default=lambda self: self.env.companies.account_sale_tax_id or self.env.companies.root_id.sudo().account_sale_tax_id,
+        default=lambda self: self._get_default_sale_taxes(),
     )
     tax_string = fields.Char(compute='_compute_tax_string')
     supplier_taxes_id = fields.Many2many('account.tax', 'product_supplier_taxes_rel', 'prod_id', 'tax_id',
         string="Purchase Taxes",
         help="Default taxes used when buying the product",
         domain=[('type_tax_use', '=', 'purchase')],
-        default=lambda self: self.env.companies.account_purchase_tax_id or self.env.companies.root_id.sudo().account_purchase_tax_id,
+        default=lambda self: self._get_default_purchase_taxes(),
     )
     property_account_income_id = fields.Many2one('account.account', company_dependent=True, ondelete='restrict',
         string="Income Account",
@@ -121,6 +121,30 @@ class ProductTemplate(models.Model):
         ],
         compute='_compute_cost_method',
     )
+
+    @api.model
+    def _get_default_sale_taxes(self, companies=None):
+        taxes = (
+            companies.filtered('account_sale_tax_id').account_sale_tax_id
+            if companies
+            else (
+                self.env.companies.account_sale_tax_id
+                or self.env.companies.root_id.sudo().account_sale_tax_id
+            )
+        )
+        return taxes.filtered(lambda tax: tax.type_tax_use == 'sale')
+
+    @api.model
+    def _get_default_purchase_taxes(self, companies=None):
+        taxes = (
+            companies.filtered('account_purchase_tax_id').account_purchase_tax_id
+            if companies
+            else (
+                self.env.companies.account_purchase_tax_id
+                or self.env.companies.root_id.sudo().account_purchase_tax_id
+            )
+        )
+        return taxes.filtered(lambda tax: tax.type_tax_use == 'purchase')
 
     def _get_product_accounts(self):
         # Cached for the transaction: this is called once per product for every product involved
@@ -269,7 +293,7 @@ class ProductTemplate(models.Model):
         return super()._onchange_type()
 
     def _force_default_sale_tax(self, companies):
-        default_customer_taxes = companies.filtered('account_sale_tax_id').account_sale_tax_id
+        default_customer_taxes = self._get_default_sale_taxes(companies)
         if not default_customer_taxes:
             return
         links = [Command.link(t.id) for t in default_customer_taxes]
@@ -279,7 +303,7 @@ class ProductTemplate(models.Model):
             chunk.invalidate_recordset(['taxes_id'])
 
     def _force_default_purchase_tax(self, companies):
-        default_supplier_taxes = companies.filtered('account_purchase_tax_id').account_purchase_tax_id
+        default_supplier_taxes = self._get_default_purchase_taxes(companies)
         if not default_supplier_taxes:
             return
         links = [Command.link(t.id) for t in default_supplier_taxes]
