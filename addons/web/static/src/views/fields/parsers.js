@@ -112,7 +112,7 @@ export class DurationParseError extends Error {}
  * @returns {number} a float
  */
 export function parseFloat(value, { allowOperation = false } = {}) {
-    const operation = allowOperation ? ArithmeticOperation.parse(value, parseFloat) : null;
+    const operation = allowOperation ? ArithmeticOperation.parse(value, evaluateMathematicalExpression) : null;
     if (operation) {
         return operation;
     }
